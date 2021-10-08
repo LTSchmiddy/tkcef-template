@@ -1,0 +1,30 @@
+// Importing Bootstrap SCSS
+@import "custom";
+@import "~bootstrap/scss/bootstrap";
+
+$top-bar-height: 40px;
+
+#page-root {
+    padding: 0;
+    margin: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    background-color: white;
+}
+
+#top-bar {
+    height: $top-bar-height;
+    width: 100%;
+    padding: 5px;
+    vertical-align: middle;
+    background-color: #e07014;
+}
+
+#viewport {
+    height: calc(100% - #{$top-bar-height});
+    width: 100%;
+    padding: 5px;
+    background-color: #bbbbbb;
+}

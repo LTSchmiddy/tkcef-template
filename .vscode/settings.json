@@ -1,0 +1,18 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/src/py",
+        "${workspaceFolder}/stubs",
+    ],
+    "python.pythonPath": "venv\\Scripts\\python.exe",
+    "jshint.enable": false,
+    "files.associations": {
+        // "*.htm": "jinja-html",
+        "*.spec": "python",
+        // "*.js": "plaintext"
+    },
+    "eslint.enable": false,
+
+    "htmlhint.options": {
+        "doctype-first": false
+    },
+}

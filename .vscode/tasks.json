@@ -1,0 +1,56 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compile TkCef TypeScript",
+            "type": "shell",
+            "command": "tsc",
+            "options": {
+                "cwd": "./src/py/tkcef/ts"
+            }
+        },
+        {
+            "label": "Webpack",
+            "type": "shell",
+            "command": "webpack"
+        },
+        {
+            "label": "Build Webcode",
+            "type": "shell",
+            "command": "echo",
+            "args": ["\"Building Complete\""],
+            "dependsOn": [
+                "Compile TkCef TypeScript",
+                "Webpack"
+            ],
+            "dependsOrder": "sequence"
+            // "dependsOrder": "parallel"
+            
+        },
+
+        {
+            "label": "PyInstaller: Build",
+            "type": "shell",
+            "command": "venv\\Scripts\\pyinstaller.exe",
+            "args": [
+                "paradb.spec",
+                "--noconfirm"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "PyInstaller: Build and Run App",
+            "type": "process",
+            "command": "./dist/paradb/paradb_app.exe",
+            "dependsOn": [
+                "PyInstaller: Build"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+# Directory:
+**/__pycache__
+/.mypy_cache/
+
+/blob_storage/
+/build/
+/dist/
+/node_modules/
+/run/
+/stubs/
+/venv/
+/webrtc_event_logs/
+
+# Files:
+/debug.log
+/error.log
