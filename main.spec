@@ -11,8 +11,10 @@ from PyInstaller.building.build_main import Analysis
 from PyInstaller.building.api import PYZ, EXE, COLLECT
 block_cipher = None
 
-import pathlib, os, sys, subprocess
+import os, subprocess
 from pathlib import Path
+
+
 
 cef_dir = Path("./venv/Lib/site-packages/cefpython3")
 
@@ -27,17 +29,19 @@ def run_webpack():
         ],
         shell=os.name=='nt'
     )
-
+    
 run_webpack()
 
-app = Analysis(['src\\py\\paradb_app.py'],
-    pathex=['D:\\git-repos\\work\\db-access-util'],
+entry: Path = Path("src/py/main.py")
+
+app = Analysis([entry],
+    pathex=['D:\\git-repos\\work\\tkcef-template'],
     binaries=[],
     datas=[
         ("./dist/webpack/production", "./ui/webpack"),
         ("./src/templates", "./ui/templates"),
-        ("./src/py/tkcef/webapp_preload.js", "./tkcef/"),
-        ("./rsrc", "./rsrc"),
+        ("./src/py/tkcef/js/webapp_preload.js", "./tkcef/js/"),
+        ("./src/py/tkcef/js/pyscope_preload.js", "./tkcef/js/"),
         (cef_dir.joinpath("subprocess.exe"), "."),
         (cef_dir.joinpath("locales"), "./locales"),
         (cef_dir.joinpath("swiftshader"), "./swiftshader"),
@@ -67,7 +71,7 @@ app_exe = EXE(
     app.scripts, 
     [],
     exclude_binaries=True,
-    name='paradb_app',
+    name='tk_cef_template',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

@@ -173,3 +173,4 @@ class AppManager:
 
 from . import webapp
 from .frame import WebFrame
+from .browser_namespace import BrowserNamespaceWrapper

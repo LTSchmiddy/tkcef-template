@@ -5,24 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Cli: Run",
-            "type": "python",
-            "request": "launch",
-            "program": "./src/py/paradb.py",
-            "console": "integratedTerminal"
-        },
-        {
             "name": "Python App: Run",
             "type": "python",
             "request": "launch",
-            "program": "./src/py/paradb_app.py",
+            "program": "./src/py/main.py",
             "console": "integratedTerminal"
         },
         {
             "name": "Python App: Webpack and Run",
             "type": "python",
             "request": "launch",
-            "program": "./src/py/paradb_app.py",
+            "program": "./src/py/main.py",
             "console": "integratedTerminal",
             // "preLaunchTask": "Webpack"
             "preLaunchTask": "Build Webcode"

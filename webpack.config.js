@@ -23,7 +23,9 @@ module.exports = (env, options) => {
         output: {
             publicPath: "",
             path: path.resolve(__dirname, wpDest),
-            filename: 'main.bundle.js'
+            filename: 'app.bundle.js',
+            libraryTarget: 'var',
+            library: 'app'
         },
         module: {
             rules: [

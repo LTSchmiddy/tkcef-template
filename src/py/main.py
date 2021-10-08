@@ -2,14 +2,17 @@ import tkinter as tk
 from pathlib import Path
 
 import settings
+import tkcef
 from tkcef import AppManager
 from tkcef.webapp import WebView
 
-import ui, jsbind
+import ui, jsbind, test_scope
 
 if __name__ == '__main__':
     settings.load_settings()
     settings.save_settings()
+    
+    tkcef.BrowserNamespaceWrapper.create_namespace_if_dne("test_scope", use_external=test_scope)
     
     app_man = AppManager()
     app1 = WebView(

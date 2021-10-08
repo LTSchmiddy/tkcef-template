@@ -35,7 +35,7 @@
             "type": "shell",
             "command": "venv\\Scripts\\pyinstaller.exe",
             "args": [
-                "paradb.spec",
+                "main.spec",
                 "--noconfirm"
             ],
             "problemMatcher": [],
@@ -47,7 +47,7 @@
         {
             "label": "PyInstaller: Build and Run App",
             "type": "process",
-            "command": "./dist/paradb/paradb_app.exe",
+            "command": "./dist/paradb/tk_cef_template.exe",
             "dependsOn": [
                 "PyInstaller: Build"
             ]

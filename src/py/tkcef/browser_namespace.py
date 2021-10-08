@@ -17,30 +17,28 @@ class BrowserNamespaceWrapper:
     _name: str
     _doc: str
 
-    def __init__(self, name, doc: Union(str, None) = None, add_main=False, global_level=True):
+    def __init__(self, name, doc: Union(str, None) = None, global_level=True, *, use_external: ModuleType = None):
         self._name = name
-        self._doc = doc
-        if doc is None:
-            _doc = "A unique namespace for running In-Browser Python code."
+        
+        if use_external is not None:
+            self._mod = use_external
 
-        self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + self._doc)
+        else:
+            if doc is None:
+                doc = "A unique namespace for running In-Browser Python code."
+
+            self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + doc)
+            
+            
         self._mod_locals = {}
-
-        if add_main:
-            self.globals.update({"main": self.namespaces["main"]})
-
         # Lets be honest, I don't there'd ever be much reason for this to be false.
         self.global_level = global_level
-        self.initial_imports()
 
-    def initial_imports(self):
-        pass
-        # self.run("import game, dungeonsheets, db, viewport")
 
     def reset(self):
-        self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + self._doc)
+        self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + self.doc)
         self._mod_locals = {}
-        self.initial_imports()
+
 
     @property
     def name(self):
@@ -169,30 +167,30 @@ class BrowserNamespaceWrapper:
         return new_id
 
     @classmethod
-    def create_new_namespace(cls, name: str = "", add_main=True, global_level=True):
+    def create_new_namespace(cls, name: str = "", global_level=True, *, use_external: ModuleType = None):
         if name == "" or name is None:
             name = cls.get_new_namespace_id()
 
         cls.namespaces[name] = BrowserNamespaceWrapper(
             name,
             f"A unique namespace for running In-Browser Python code. Namespace: {name}",
-            add_main,
             global_level,
+            use_external=use_external
         )
         return name
 
     @classmethod
-    def create_namespace_if_dne(cls, name: str, add_main=True, global_level=True):
+    def create_namespace_if_dne(cls, name: str, global_level=True, *, use_external: ModuleType = None):
         if name in cls.namespaces:
-            return True
+            return name
 
         cls.namespaces[name] = BrowserNamespaceWrapper(
             name,
             f"A unique namespace for running In-Browser Python code. Namespace: {name}",
-            add_main,
             global_level,
+            use_external=use_external
         )
-        return False
+        return name
 
     @classmethod
     def remove_namespace(cls, name: str):
@@ -204,10 +202,14 @@ class BrowserNamespaceWrapper:
 
     @classmethod
     def global_reset(cls):
-        cls.namespaces = {
-            "main": BrowserNamespaceWrapper(
-                "main", "Primary namespace for running In-Browser Python code", False
-            )
-        }
+        cls.namespaces = {}
+        # cls.namespaces = {
+        #     "main": BrowserNamespaceWrapper(
+        #         "main", "Primary namespace for running In-Browser Python code", False
+        #     )
+        # }
+        
+        # if add_main:
+        #     self.globals.update({"main": self.namespaces["main"]})
         
 BrowserNamespaceWrapper.global_reset()
