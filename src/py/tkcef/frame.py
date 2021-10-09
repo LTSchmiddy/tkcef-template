@@ -10,6 +10,52 @@ import logging as _logging
 from . import webapp, AppManager, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
 
 
+
+class LifespanHandler(object):
+    def __init__(self, tkFrame):
+        self.tkFrame = tkFrame
+
+    def OnBeforeClose(self, browser, **_):
+        logger.debug("LifespanHandler.OnBeforeClose")
+        self.tkFrame.quit()
+
+
+class LoadHandler(object):
+    def __init__(self, browser_frame):
+        self.browser_frame: BrowserFrame = browser_frame
+
+    def OnLoadStart(self, browser, **_):
+        if self.browser_frame.master.navigation_bar:
+            self.browser_frame.master.navigation_bar.set_url(browser.GetUrl())
+
+    def OnLoadEnd(self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int):
+        self.browser_frame.webframe.app.on_page_loaded(browser, frame, http_code)    
+    
+
+class FocusHandler(object):
+    """For focus problems see Issue #255 and Issue #535."""
+
+    def __init__(self, browser_frame):
+        self.browser_frame = browser_frame
+
+    def OnTakeFocus(self, next_component, **_):
+        logger.debug(
+            "FocusHandler.OnTakeFocus, next={next}".format(next=next_component)
+        )
+
+    def OnSetFocus(self, source, **_):
+        logger.debug("FocusHandler.OnSetFocus, source={source}".format(source=source))
+        if LINUX:
+            return False
+        else:
+            return True
+
+    def OnGotFocus(self, **_):
+        logger.debug("FocusHandler.OnGotFocus")
+        if LINUX:
+            self.browser_frame.focus_set()
+            
+
 class WebFrame(tk.Frame):
     browser: cef.PyBrowser = None
     menubar: tk.Menu = None
@@ -17,7 +63,7 @@ class WebFrame(tk.Frame):
     def __init__(
         self,
         root,
-        webview,
+        app,
         title: str = "Tkinter example",
         show_navbar: bool = False,
         geometry: str = "900x640",
@@ -29,8 +75,8 @@ class WebFrame(tk.Frame):
         # Setting relationships between root, frame, and webapp:
         self.root: tk.Tk = root
         # self.root.webframe = self
-        self.webview: webapp.WebView = webview
-        self.webview.tk_frame = self
+        self.app: webapp.WebApp = app
+        self.app.tk_frame = self
 
         # Setting up manager info:
         self.app_manager: AppManager = app_manager
@@ -136,14 +182,18 @@ class WebFrame(tk.Frame):
 
 class BrowserFrame(tk.Frame):
     webframe: WebFrame
+    
+    # LifespanHandlerClass = LifespanHandler
+    # LoadHandlerClass = LoadHandler
+    # FocusHandlerClass = FocusHandler
 
     @property
     def browser(self):
-        return self.webframe.webview.browser
+        return self.webframe.app.browser
     
     @browser.setter
     def browser(self, value):
-        self.webframe.webview.browser = value
+        self.webframe.app.browser = value
     
     def __init__(self, webframe, navigation_bar=None):
         self.navigation_bar = navigation_bar
@@ -166,7 +216,7 @@ class BrowserFrame(tk.Frame):
         # self.browser = cef.CreateBrowserSync(window_info,
         #                                      url="https://www.google.com/")
 
-        self.webframe.webview.construct_app_webview(
+        self.webframe.app.construct_app_webview(
             window_info,
             LifespanHandler(self),
             LoadHandler(self),
@@ -261,49 +311,6 @@ class BrowserFrame(tk.Frame):
         self.browser = None
 
 
-class LifespanHandler(object):
-    def __init__(self, tkFrame):
-        self.tkFrame = tkFrame
-
-    def OnBeforeClose(self, browser, **_):
-        logger.debug("LifespanHandler.OnBeforeClose")
-        self.tkFrame.quit()
-
-
-class LoadHandler(object):
-    def __init__(self, browser_frame):
-        self.browser_frame: BrowserFrame = browser_frame
-
-    def OnLoadStart(self, browser, **_):
-        if self.browser_frame.master.navigation_bar:
-            self.browser_frame.master.navigation_bar.set_url(browser.GetUrl())
-
-    def OnLoadEnd(self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int):
-        self.browser_frame.webframe.webview.on_page_loaded(browser, frame, http_code)    
-    
-
-class FocusHandler(object):
-    """For focus problems see Issue #255 and Issue #535."""
-
-    def __init__(self, browser_frame):
-        self.browser_frame = browser_frame
-
-    def OnTakeFocus(self, next_component, **_):
-        logger.debug(
-            "FocusHandler.OnTakeFocus, next={next}".format(next=next_component)
-        )
-
-    def OnSetFocus(self, source, **_):
-        logger.debug("FocusHandler.OnSetFocus, source={source}".format(source=source))
-        if LINUX:
-            return False
-        else:
-            return True
-
-    def OnGotFocus(self, **_):
-        logger.debug("FocusHandler.OnGotFocus")
-        if LINUX:
-            self.browser_frame.focus_set()
 
 
 class NavigationBar(tk.Frame):

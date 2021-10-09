@@ -4,7 +4,7 @@ from pathlib import Path
 import settings
 import tkcef
 from tkcef import AppManager
-from tkcef.webapp import WebView
+from tkcef.webapp import WebApp
 
 import ui, jsbind, test_scope
 
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     tkcef.BrowserNamespaceWrapper.create_namespace_if_dne("test_scope", use_external=test_scope)
     
     app_man = AppManager()
-    app1 = WebView(
+    app1 = WebApp(
         document_path=settings.webpack_dir.joinpath("index.html").absolute().as_uri(),
         js_bindings=jsbind.bindings
     )

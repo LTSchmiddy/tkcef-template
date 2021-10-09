@@ -55,6 +55,7 @@ UPDATE_DELAY = 0.05
 #     pass
 
 
+
 class AppManager:
     root_frames: dict[str, WebFrame]
     keys_to_add: dict[str, WebFrame]
@@ -103,7 +104,7 @@ class AppManager:
     def add_webapp(
         self,
         key: str,
-        webview: webapp.Webapp,
+        webview: webapp.WebApp,
         title: str = "Tkinter example",
         show_navbar: bool = False,
         geometry: str = "900x640",

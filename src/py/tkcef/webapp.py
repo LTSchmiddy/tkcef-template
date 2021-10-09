@@ -7,7 +7,7 @@ from cefpython3 import cefpython as cef
 
 from .pyscope import PyScopeManager, BrowserNamespaceWrapper
 
-class WebView:
+class WebApp:
     browser: cef.PyBrowser = None
     page_code_loader_fn: str = "_load_page_content"
     
@@ -16,6 +16,12 @@ class WebView:
     js_preload: str
     document_path: str 
     document_code: str 
+    
+    
+    @property
+    def app_manager_key(self) -> str:
+        return self.tk_frame.app_manager_key
+
 
     def __init__(self, *, document_path: str = None, document_code: str = None, js_preload_path: str=None, js_bindings: dict={}, tk_frame=None):
         if js_preload_path is None:
@@ -39,10 +45,11 @@ class WebView:
         lifespan_handler,
         load_handler,
         focus_handler
-    ) -> cef.PyBrowser:        
+    ) -> cef.PyBrowser:  
+                      
         js_bindings = self.create_js_bindings()
         
-        def _assign_browser(webview: WebView):
+        def _assign_browser(webview: WebApp):
             
             webview.browser: cef.PyBrowser = cef.CreateBrowserSync(
                 window_info,
@@ -99,8 +106,9 @@ class WebView:
     
     def create_js_bindings(self) -> cef.JavascriptBindings:
         retVal = cef.JavascriptBindings()
-        print(self.on_app_loaded.__name__)
+        # print(self.on_app_loaded.__name__)
         
+        retVal.SetProperty("app_id", self.app_manager_key)
         retVal.SetObject("_pyscopeman", self.pyscopemanager)
         retVal.SetObject("_pynamespace", BrowserNamespaceWrapper)
         retVal.SetFunction(self.on_app_loaded.__name__, self.on_app_loaded)
