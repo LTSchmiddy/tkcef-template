@@ -1,5 +1,5 @@
 from __future__ import annotations, generator_stop
-from typing import Callable
+from typing import Callable, Union
 
 # Example of embedding CEF Python browser using Tkinter toolkit.
 # This example has two widgets: a navigation bar and a browser.
@@ -18,16 +18,15 @@ from typing import Callable
 # and Issue #284).
 # Other focus issues discussed in Issue #535.
 
-
-from cefpython3 import cefpython as cef
 import threading
-import ctypes
 import tkinter as tk
 import sys
-import os
 import time
 import platform
 import logging as _logging
+import sched
+
+from cefpython3 import cefpython as cef
 
 MAIN_THREAD_NAME = 'MainThread'
 
@@ -47,12 +46,6 @@ logger = _logging.getLogger("tkcef")
 IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 
 UPDATE_DELAY = 0.05
-# def donothing():
-#     pass
-
-
-# def run():
-#     pass
 
 
 
@@ -62,9 +55,17 @@ class AppManager:
     keys_to_remove: list[str]
 
     thread: threading.Thread
+    update_interval: Union[int, float]
+    update_sched: sched.scheduler
 
-    def __init__(self, cef_config: dict = {}, thread: threading.Thread = threading.current_thread()):
+    @property 
+    def should_run(self) -> bool:
+        return len(self.root_frames) > 0 or len(self.keys_to_add) > 0
+
+    def __init__(self, *, update_interval: Union[int, float] = 0.05, update_sched: sched.scheduler = sched.scheduler(), cef_config: dict = {}, thread: threading.Thread = threading.current_thread()):
         self.thread = thread
+        self.update_sched = update_sched
+        self.update_interval = update_interval
         
         logger.setLevel(_logging.DEBUG)
         stream_handler = _logging.StreamHandler()
@@ -134,8 +135,11 @@ class AppManager:
     def remove_webapp(self, key: str):
         self.keys_to_remove.append(key)
 
+    def wait_interval(self):
+        time.sleep(self.update_interval)
+
     def mainloop(self):
-        while len(self.root_frames) > 0 or len(self.keys_to_add) > 0:
+        while self.should_run:
             self.mainloop_step()
             
     def mainloop_step(self):
@@ -163,9 +167,7 @@ class AppManager:
                     del self.root_frames[i]
             self.keys_to_remove.clear()
         
-        time.sleep(UPDATE_DELAY)
 
-        
 
     def shutdown(self):
         logger.debug("Main loop exited")
