@@ -10,7 +10,6 @@ import logging as _logging
 from . import webapp, AppManager, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
 
 
-
 class LifespanHandler(object):
     def __init__(self, tkFrame):
         self.tkFrame = tkFrame
@@ -29,8 +28,8 @@ class LoadHandler(object):
             self.browser_frame.master.navigation_bar.set_url(browser.GetUrl())
 
     def OnLoadEnd(self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int):
-        self.browser_frame.webframe.app.on_page_loaded(browser, frame, http_code)    
-    
+        self.browser_frame.webframe.app.on_page_loaded(browser, frame, http_code)
+
 
 class FocusHandler(object):
     """For focus problems see Issue #255 and Issue #535."""
@@ -54,7 +53,7 @@ class FocusHandler(object):
         logger.debug("FocusHandler.OnGotFocus")
         if LINUX:
             self.browser_frame.focus_set()
-            
+
 
 class WebFrame(tk.Frame):
     browser: cef.PyBrowser = None
@@ -156,10 +155,9 @@ class WebFrame(tk.Frame):
             self.browser_frame = None
         else:
             self.master.destroy()
-        
+
         if self.app_manager is not None and self.app_manager_key is not None:
             self.app_manager.remove_webapp(self.app_manager_key)
-            
 
     def get_browser(self):
         if self.browser_frame:
@@ -182,7 +180,7 @@ class WebFrame(tk.Frame):
 
 class BrowserFrame(tk.Frame):
     webframe: WebFrame
-    
+
     # LifespanHandlerClass = LifespanHandler
     # LoadHandlerClass = LoadHandler
     # FocusHandlerClass = FocusHandler
@@ -190,19 +188,19 @@ class BrowserFrame(tk.Frame):
     @property
     def browser(self):
         return self.webframe.app.browser
-    
+
     @browser.setter
     def browser(self, value):
         self.webframe.app.browser = value
-    
+
     def __init__(self, webframe, navigation_bar=None):
         self.navigation_bar = navigation_bar
         self.closing = False
         tk.Frame.__init__(self, webframe)
         self.webframe = webframe
-        
+
         # self.embed_browser()
-        
+
         self.bind("<FocusIn>", self.on_focus_in)
         self.bind("<FocusOut>", self.on_focus_out)
         self.bind("<Configure>", self.on_configure)
@@ -244,10 +242,10 @@ class BrowserFrame(tk.Frame):
             # https://github.com/cztomczak/cefpython/issues/583
 
             # noinspection PyUnresolvedReferences
-            from AppKit import NSApp #type: ignore
+            from AppKit import NSApp  # type: ignore
 
             # noinspection PyUnresolvedReferences
-            import objc #type: ignore
+            import objc  # type: ignore
 
             logger.info("winfo_id={}".format(self.winfo_id()))
             # noinspection PyUnresolvedReferences
@@ -309,8 +307,6 @@ class BrowserFrame(tk.Frame):
         # Clear browser references that you keep anywhere in your
         # code. All references must be cleared for CEF to shutdown cleanly.
         self.browser = None
-
-
 
 
 class NavigationBar(tk.Frame):

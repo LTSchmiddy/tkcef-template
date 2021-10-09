@@ -167,10 +167,10 @@ def func(
     :param __return_func_code:
     :return: Your new, anonymous function.
     """
-    
+
     if name is None:
         name = "anonymous_function"
-    
+
     if collect_locals:
         if isinstance(f_args, str) and f_args.strip() != "":
             f_args += ", __update_locals, __secret_frame,"
@@ -208,8 +208,9 @@ def func(
         # func_text += f"{(' ' * __reindent_size * 2)}__secret_locals.update(__update_locals)\n"
         func_text += f"{(' ' * __reindent_size * 2)}__secret_frame.f_locals.update(__update_locals)\n"
         for i in secret_frame.f_locals.keys():
-            func_text += f"{(' ' * __reindent_size)}{i} = __secret_frame.f_locals['{i}']\n"
-
+            func_text += (
+                f"{(' ' * __reindent_size)}{i} = __secret_frame.f_locals['{i}']\n"
+            )
 
     func_text += _adjust_func_string_indentation(f_code, __reindent_size)
     if __print_func_code:
@@ -251,7 +252,9 @@ def _adjust_func_string_indentation(code_str: str, reindent_size: int = 4) -> st
     """
 
     return textwrap.indent(
-        textwrap.dedent(code_str), " " * reindent_size, lambda line: line.strip != "",
+        textwrap.dedent(code_str),
+        " " * reindent_size,
+        lambda line: line.strip != "",
     )
 
 

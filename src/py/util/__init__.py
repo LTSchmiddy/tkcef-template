@@ -59,8 +59,6 @@ def yn_prompt(msg: str = "", default=None):
         print_error("Invalid response. Try again...")
 
 
-
-
 __all__ = (
     "mkdir_if_missing",
     "list_contains",
@@ -71,5 +69,5 @@ __all__ = (
     "print_error",
     "print_warning",
     "yn_prompt",
-    "exec_path"
+    "exec_path",
 )

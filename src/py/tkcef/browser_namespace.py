@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-import random 
+import random
 from typing import Union
 
 from cefpython3 import cefpython as cef
@@ -17,9 +17,16 @@ class BrowserNamespaceWrapper:
     _name: str
     _doc: str
 
-    def __init__(self, name, doc: Union(str, None) = None, global_level=True, *, use_external: ModuleType = None):
+    def __init__(
+        self,
+        name,
+        doc: Union(str, None) = None,
+        global_level=True,
+        *,
+        use_external: ModuleType = None,
+    ):
         self._name = name
-        
+
         if use_external is not None:
             self._mod = use_external
 
@@ -28,17 +35,14 @@ class BrowserNamespaceWrapper:
                 doc = "A unique namespace for running In-Browser Python code."
 
             self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + doc)
-            
-            
+
         self._mod_locals = {}
         # Lets be honest, I don't there'd ever be much reason for this to be false.
         self.global_level = global_level
 
-
     def reset(self):
         self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + self.doc)
         self._mod_locals = {}
-
 
     @property
     def name(self):
@@ -114,7 +118,7 @@ class BrowserNamespaceWrapper:
                 f"{__name__}.{self.name}",
             )
 
-    def do_func(self, code: str, args: dict=None, main_globals=True):
+    def do_func(self, code: str, args: dict = None, main_globals=True):
         if args is None:
             args = {}
 
@@ -131,7 +135,7 @@ class BrowserNamespaceWrapper:
                 *tuple(args.values())
             )
 
-    def make_func(self, name: str, code: str, args: list=None, main_globals=True):
+    def make_func(self, name: str, code: str, args: list = None, main_globals=True):
         if args is None:
             args = {}
 
@@ -147,7 +151,7 @@ class BrowserNamespaceWrapper:
             )
         else:
             fn = af.func(args, code, name=name, collect_locals=False)
-        
+
         if name is not None:
             self.set_var(name, fn)
         return fn
@@ -155,7 +159,7 @@ class BrowserNamespaceWrapper:
     # Static Info:
     max_namespaces = 100000
     namespaces: dict[str, BrowserNamespaceWrapper] = {}
-    
+
     @classmethod
     def get_new_namespace_id(cls):
         new_id = "n-py0"
@@ -163,11 +167,13 @@ class BrowserNamespaceWrapper:
         while new_id in cls.namespaces:
             new_id = f"n-py{random.randint(1, cls.max_namespaces)}"
             print(new_id)
-            
+
         return new_id
 
     @classmethod
-    def create_new_namespace(cls, name: str = "", global_level=True, *, use_external: ModuleType = None):
+    def create_new_namespace(
+        cls, name: str = "", global_level=True, *, use_external: ModuleType = None
+    ):
         if name == "" or name is None:
             name = cls.get_new_namespace_id()
 
@@ -175,12 +181,14 @@ class BrowserNamespaceWrapper:
             name,
             f"A unique namespace for running In-Browser Python code. Namespace: {name}",
             global_level,
-            use_external=use_external
+            use_external=use_external,
         )
         return name
 
     @classmethod
-    def create_namespace_if_dne(cls, name: str, global_level=True, *, use_external: ModuleType = None):
+    def create_namespace_if_dne(
+        cls, name: str, global_level=True, *, use_external: ModuleType = None
+    ):
         if name in cls.namespaces:
             return name
 
@@ -188,7 +196,7 @@ class BrowserNamespaceWrapper:
             name,
             f"A unique namespace for running In-Browser Python code. Namespace: {name}",
             global_level,
-            use_external=use_external
+            use_external=use_external,
         )
         return name
 
@@ -208,8 +216,9 @@ class BrowserNamespaceWrapper:
         #         "main", "Primary namespace for running In-Browser Python code", False
         #     )
         # }
-        
+
         # if add_main:
         #     self.globals.update({"main": self.namespaces["main"]})
-        
+
+
 BrowserNamespaceWrapper.global_reset()

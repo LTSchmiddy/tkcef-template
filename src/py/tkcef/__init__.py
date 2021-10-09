@@ -28,7 +28,7 @@ import sched
 
 from cefpython3 import cefpython as cef
 
-MAIN_THREAD_NAME = 'MainThread'
+MAIN_THREAD_NAME = "MainThread"
 
 # Fix for PyCharm hints warnings
 WindowUtils = cef.WindowUtils()
@@ -48,7 +48,6 @@ IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 UPDATE_DELAY = 0.05
 
 
-
 class AppManager:
     root_frames: dict[str, WebFrame]
     keys_to_add: dict[str, WebFrame]
@@ -58,15 +57,22 @@ class AppManager:
     update_interval: Union[int, float]
     update_sched: sched.scheduler
 
-    @property 
+    @property
     def should_run(self) -> bool:
         return len(self.root_frames) > 0 or len(self.keys_to_add) > 0
 
-    def __init__(self, *, update_interval: Union[int, float] = 0.05, update_sched: sched.scheduler = sched.scheduler(), cef_config: dict = {}, thread: threading.Thread = threading.current_thread()):
+    def __init__(
+        self,
+        *,
+        update_interval: Union[int, float] = 0.05,
+        update_sched: sched.scheduler = sched.scheduler(),
+        cef_config: dict = {},
+        thread: threading.Thread = threading.current_thread()
+    ):
         self.thread = thread
         self.update_sched = update_sched
         self.update_interval = update_interval
-        
+
         logger.setLevel(_logging.DEBUG)
         stream_handler = _logging.StreamHandler()
         formatter = _logging.Formatter("[%(filename)s] %(message)s")
@@ -89,14 +95,8 @@ class AppManager:
         else:
             # Helps prevent various GIL-related crashes:
             cef_config["multi_threaded_message_loop"] = True
-            
-            
-        cef.Initialize(
-            settings=cef_config,
-            switches={
-                "allow-file-access": ""
-            }
-        )
+
+        cef.Initialize(settings=cef_config, switches={"allow-file-access": ""})
 
         self.root_frames = {}
         self.keys_to_add = {}
@@ -111,13 +111,13 @@ class AppManager:
         geometry: str = "900x640",
         menubar_builder: Callable[[tk.Tk], tk.Menu] = None,
     ):
-        
+
         root = tk.Tk()
-        
+
         menubar = None
         if menubar_builder is not None:
             menubar = menubar_builder(root)
-        
+
         frame = WebFrame(
             root,
             webview,
@@ -126,12 +126,12 @@ class AppManager:
             geometry=geometry,
             menubar=menubar,
             app_manager=self,
-            app_manager_key=key
+            app_manager_key=key,
         )
-        
+
         # self.keys_to_add[key] = root
         self.keys_to_add[key] = frame
-    
+
     def remove_webapp(self, key: str):
         self.keys_to_remove.append(key)
 
@@ -141,33 +141,31 @@ class AppManager:
     def mainloop(self):
         while self.should_run:
             self.mainloop_step()
-            
+
     def mainloop_step(self):
-        # Since we can't manipulate the roots dict while iterating through it, 
+        # Since we can't manipulate the roots dict while iterating through it,
         # we'll track whether or not windows should be added or removed, then handle them here.
-        
+
         # If any windows were opened, add them to roots:
         if len(self.keys_to_add) > 0:
-                self.root_frames.update(self.keys_to_add)
-                self.keys_to_add.clear()
-            
+            self.root_frames.update(self.keys_to_add)
+            self.keys_to_add.clear()
+
         # Update windows:
         for key, frame in self.root_frames.items():
-            
+
             # if (threading.currentThread() == self.thread):
             frame.update_idletasks()
             frame.update()
             # else:
-                # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")
-            
+            # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")
+
         # If any windows were closed, remove them from roots:
         if len(self.keys_to_remove) > 0:
             for i in self.keys_to_remove:
                 if i in self.root_frames:
                     del self.root_frames[i]
             self.keys_to_remove.clear()
-        
-
 
     def shutdown(self):
         logger.debug("Main loop exited")

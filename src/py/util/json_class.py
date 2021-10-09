@@ -6,7 +6,7 @@ import json
 
 class JsonClass:
     json_attributes: Tuple[str] = ()
-    
+
     @classmethod
     def alltypes(cls) -> Dict[str, JsonClass]:
         retVal = {}
@@ -21,11 +21,10 @@ class JsonClass:
         return json.dumps(self.save_dict(), indent=indent, **kwargs)
 
     def save_json_file(self, filepath: str, indent=4, **kwargs):
-        return json.dump(self.save_dict(), open(filepath, 'w'), indent=indent, **kwargs)
-
+        return json.dump(self.save_dict(), open(filepath, "w"), indent=indent, **kwargs)
 
     def load_json_file(self, filepath: str):
-        in_data = json.load(open(filepath, 'r'))
+        in_data = json.load(open(filepath, "r"))
         self.load_dict(in_data)
 
     def load_json_string(self, p_str: str):
@@ -33,10 +32,10 @@ class JsonClass:
         self.load_dict(in_data)
 
     def load_dict(self, p_dict: Dict[str, object]):
-        
+
         json_classes = self.alltypes()
         for key, value in p_dict.items():
-            
+
             if key.startswith("-"):
                 type_info = key.split("-")[1:]
                 new_obj = json_classes[type_info[0]]()
@@ -44,37 +43,34 @@ class JsonClass:
                 setattr(self, type_info[1], new_obj)
             else:
                 setattr(self, key, value)
-    
+
     def load(self, **p_dict):
         self.load_dict(p_dict)
 
-    
     @classmethod
     def new_from_string(cls, p_data: dict):
         retVal = cls()
         retVal.load_json_string(p_data)
         return retVal
-    
+
     @classmethod
     def new_from_file(cls, p_data: dict):
         retVal = cls()
         retVal.load_json_file(p_data)
         return retVal
-    
+
     @classmethod
     def new_from_dict(cls, p_data: dict):
         retVal = cls()
         retVal.load_dict(p_data)
         return retVal
-    
+
     @classmethod
     def new(cls, **p_data):
         retVal = cls()
         retVal.load(**p_data)
         return retVal
 
-        
-        
 
 def make_dict(obj, attrs: Union[List[str], Tuple[str]]):
     retVal = {}
