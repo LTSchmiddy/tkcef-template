@@ -58,6 +58,8 @@ class FocusHandler(object):
 class WebFrame(tk.Frame):
     browser: cef.PyBrowser = None
     menubar: tk.Menu = None
+    
+    updated_title: str = None
 
     def __init__(
         self,
@@ -70,6 +72,8 @@ class WebFrame(tk.Frame):
         app_manager: AppManager = None,
         app_manager_key: str = None,
     ):
+        
+        self.updated_title: str = None
 
         # Setting relationships between root, frame, and webapp:
         self.root: tk.Tk = root
@@ -125,6 +129,9 @@ class WebFrame(tk.Frame):
         # Pack MainFrame
         self.pack(fill=tk.BOTH, expand=tk.YES)
 
+    def set_title(self, new_title: str):
+        self.updated_title = new_title
+    
     def set_menubar(self, menubar: tk.Menu):
         self.menubar = menubar
         self.root.config(menu=self.menubar)
@@ -177,13 +184,17 @@ class WebFrame(tk.Frame):
             # noinspection PyProtectedMember
             self.master.call("wm", "iconphoto", self.master._w, self.icon)
 
-
+    def update(self):
+        super().update()
+        
+        if self.updated_title is not None:
+            self.master.title(self.updated_title)
+            self.updated_title = None
+        
+        
+    
 class BrowserFrame(tk.Frame):
     webframe: WebFrame
-
-    # LifespanHandlerClass = LifespanHandler
-    # LoadHandlerClass = LoadHandler
-    # FocusHandlerClass = FocusHandler
 
     @property
     def browser(self):
@@ -198,8 +209,6 @@ class BrowserFrame(tk.Frame):
         self.closing = False
         tk.Frame.__init__(self, webframe)
         self.webframe = webframe
-
-        # self.embed_browser()
 
         self.bind("<FocusIn>", self.on_focus_in)
         self.bind("<FocusOut>", self.on_focus_out)
@@ -216,9 +225,11 @@ class BrowserFrame(tk.Frame):
 
         self.webframe.app.construct_app_webview(
             window_info,
-            LifespanHandler(self),
-            LoadHandler(self),
-            FocusHandler(self),
+            [
+                LifespanHandler(self),
+                LoadHandler(self),
+                FocusHandler(self),
+            ]
         )
 
     def get_window_handle(self):
@@ -257,10 +268,8 @@ class BrowserFrame(tk.Frame):
         else:
             raise Exception("Couldn't obtain window handle")
 
-    def message_loop_work(self):
-        pass
-        # cef.MessageLoopWork()
-        # self.after(10, self.message_loop_work)
+    # def message_loop_work(self):
+    #     pass
 
     def on_configure(self, _):
         # pass

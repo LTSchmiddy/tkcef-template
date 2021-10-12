@@ -142,4 +142,5 @@ class PyScope {
         });
     }
 }
+const app_scope = new PyScope(window.app_scope_key);
 //# sourceMappingURL=pyscope_preload.js.map

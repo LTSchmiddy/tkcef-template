@@ -19,10 +19,10 @@ if __name__ == "__main__":
     app_man = AppManager()
     app1 = WebApp(
         document_path=settings.webpack_dir.joinpath("index.html").absolute().as_uri(),
-        js_bindings=jsbind.bindings,
+        js_bind_objects=jsbind.bindings,
     )
 
-    def construct_menubar(root: tk.Tk):
+    def construct_menubar(root: tk.Tk) -> tk.Menu:
         menubar = tk.Menu(root)
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(

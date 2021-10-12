@@ -56,6 +56,8 @@ class AppManager:
     thread: threading.Thread
     update_interval: Union[int, float]
     update_sched: sched.scheduler
+    
+    next_update_event: sched.Event
 
     @property
     def should_run(self) -> bool:
@@ -72,6 +74,8 @@ class AppManager:
         self.thread = thread
         self.update_sched = update_sched
         self.update_interval = update_interval
+
+        self.next_update_event = None
 
         logger.setLevel(_logging.DEBUG)
         stream_handler = _logging.StreamHandler()
@@ -105,7 +109,7 @@ class AppManager:
     def add_webapp(
         self,
         key: str,
-        webview: webapp.WebApp,
+        app: webapp.WebApp,
         title: str = "Tkinter example",
         show_navbar: bool = False,
         geometry: str = "900x640",
@@ -118,9 +122,10 @@ class AppManager:
         if menubar_builder is not None:
             menubar = menubar_builder(root)
 
-        frame = WebFrame(
+        # frame = WebFrame(
+        frame = app.tk_frame_class(
             root,
-            webview,
+            app,
             title=title,
             show_navbar=show_navbar,
             geometry=geometry,
@@ -140,7 +145,18 @@ class AppManager:
 
     def mainloop(self):
         while self.should_run:
+            # Using sched to control the timing of the mainloop is 
+            # a lot more consistent than using time.sleep() directly.
+            self.next_update_event = self.update_sched.enter(
+                self.update_interval,
+                0,
+                lambda: None,
+                # A bit of an odd choice, sure. But way, we don't have to run
+                # the update before scheduling the next one.
+            )
             self.mainloop_step()
+            self.update_sched.run()
+    
 
     def mainloop_step(self):
         # Since we can't manipulate the roots dict while iterating through it,
@@ -157,6 +173,8 @@ class AppManager:
             # if (threading.currentThread() == self.thread):
             frame.update_idletasks()
             frame.update()
+            frame.app.update()
+            
             # else:
             # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")
 

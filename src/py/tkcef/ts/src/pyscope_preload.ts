@@ -149,4 +149,4 @@ class PyScope {
 
 }
 
-
+const app_scope = new PyScope(window.app_scope_key);
