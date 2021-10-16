@@ -52,13 +52,19 @@ class PyScopeManager {
 console.log("loading scope manager");
 window._scopeman = new PyScopeManager();
 class PyScope {
-    constructor(p_id = null) {
+    constructor(p_id = null, p_allow_new = false, p_auto_create = true) {
         this.id = p_id;
-        this.create();
+        this.allow_new = p_allow_new || p_id === null;
+        this.is_new = null;
+        if (p_auto_create) {
+            this.create();
+        }
     }
     create() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.id = (yield window._scopeman.scope_call(window._pyscopeman.create, { id: this.id }));
+            let info = (yield window._scopeman.scope_call(window._pyscopeman.create, { id: this.id, allow_new: this.allow_new }));
+            this.id = info.name;
+            this.is_new = info.is_new;
         });
     }
     destroy() {
@@ -140,5 +146,5 @@ class PyScope {
         });
     }
 }
-const app_scope = new PyScope(window.app_scope_key);
+const app_scope = new PyScope(window.app_scope_key, true);
 //# sourceMappingURL=pyscope_preload.js.map

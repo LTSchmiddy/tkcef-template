@@ -2,6 +2,11 @@ interface ReturnValues {
     [key: string]: PyCall;
 }
 
+interface NewPyScopeInfo {
+    name: string;
+    is_new: boolean;
+}
+
 class PyCall {
     completed: boolean;
     outcome: any;
@@ -63,15 +68,22 @@ window._scopeman = new PyScopeManager();
 
 class PyScope {
     id: string|null;
+    allow_new: boolean;
+    is_new: boolean|null;
 
-    constructor(p_id: string|null = null) {
+    constructor(p_id: string|null = null, p_allow_new: boolean = false, p_auto_create: boolean = true) {
         this.id = p_id;
-        this.create();
+        this.allow_new = p_allow_new;
+        this.is_new = null;
+        if (p_auto_create && p_id !== null) {
+            this.create();
+        }
     }
 
     async create() {
-        this.id = <string>(await window._scopeman.scope_call(window._pyscopeman.create, {id: this.id}));
-
+        let info: NewPyScopeInfo = <NewPyScopeInfo>(await window._scopeman.scope_call(window._pyscopeman.create, {id: this.id, allow_new: this.allow_new}));
+        this.id = info.name;
+        this.is_new = info.is_new;
     }
 
     async destroy() {
@@ -147,4 +159,4 @@ class PyScope {
 
 }
 
-const app_scope = new PyScope(window.app_scope_key);
+const app_scope = new PyScope(window.app_scope_key, true);

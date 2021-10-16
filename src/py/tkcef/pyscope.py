@@ -31,12 +31,31 @@ class PyScopeManager:
     ):
         retVal = {"result": None, "error": None}
         try:
-            if "id" in kwargs and kwargs["id"] is not None:
-                retVal["result"] = BrowserNamespaceWrapper.create_namespace_if_dne(
-                    kwargs["id"]
-                )
+            
+            if not kwargs["allow_new"]:
+                # Making sure the namespace exists, and triggers an error if not:
+                scope = BrowserNamespaceWrapper.namespaces[kwargs["id"]]
+                
+                retVal["result"] = {
+                    "name": scope.name,
+                    "is_new": False
+                }
+            
+            elif "id" in kwargs and kwargs["id"] is not None:
+                will_create = BrowserNamespaceWrapper.namespace_exists(kwargs["id"])
+                
+                retVal["result"] = {
+                    "name": BrowserNamespaceWrapper.create_namespace_if_dne(
+                        kwargs["id"]
+                    ),
+                    "is_new": will_create   
+                }
             else:
-                retVal["result"] = BrowserNamespaceWrapper.create_new_namespace()
+                retVal["result"] = {
+                    "name": BrowserNamespaceWrapper.create_new_namespace(),
+                    "is_new": True
+                }
+                
         except Exception as e:
             retVal["error"] = {
                 "message": str(e),
