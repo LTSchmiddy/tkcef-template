@@ -25,7 +25,7 @@ class PyScopeManager:
 
     def config_in_browser(self, browser: cef.PyBrowser):
         browser.ExecuteJavascript(self.js_preload)
-
+    
     def create(
         self, call_id: str, complete_callback: cef.JavascriptCallback, kwargs: dict
     ):

@@ -19,13 +19,11 @@ class PyScopeManager {
         this.retVals = {};
     }
 
-    call(py_fn: Function, kwargs = {}) {
+    scope_call(scope_fn: Function, kwargs = {}) {
         let call_id: string = Math.random().toString();
 
         this.retVals[call_id] = new PyCall();
-        py_fn(call_id, this._complete_callback.bind(this), kwargs);
-        console.log(py_fn);
-        // window._pyscopeman.init_new(call_id, this._complete_callback.bind(this), kwargs);
+        scope_fn(call_id, this._complete_callback.bind(this), kwargs);
         
         return new Promise((resolve: any, reject: any) => {
             this._checkValue(call_id, resolve, reject); 
@@ -33,12 +31,12 @@ class PyScopeManager {
     }
 
     _checkValue (call_id: string, resolve: any, reject: any) {
-        let check = setInterval(() => {
+        let return_interval_id = setInterval(() => {
            let call = this.retVals[call_id];
            if (call.completed) {
                let outcome = call.outcome;
                delete this.retVals[call_id];
-               clearInterval(check);
+               clearInterval(return_interval_id);
 
                 if (outcome['error'] !== null){
                     outcome['error'];
@@ -72,17 +70,17 @@ class PyScope {
     }
 
     async create() {
-        this.id = <string>(await window._scopeman.call(window._pyscopeman.create, {id: this.id}));
+        this.id = <string>(await window._scopeman.scope_call(window._pyscopeman.create, {id: this.id}));
 
     }
 
     async destroy() {
-        this.id = <string>(await window._scopeman.call(window._pyscopeman.destroy, {id: this.id}));
+        this.id = <string>(await window._scopeman.scope_call(window._pyscopeman.destroy, {id: this.id}));
 
     }
 
     async exec(code: string, ret_name: string|null = null, params: any = {}): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.exec, {
+        return await window._scopeman.scope_call(window._pyscopeman.exec, {
             "id": this.id,
             "code": code,
             "ret_name": ret_name,
@@ -91,7 +89,7 @@ class PyScope {
     }
 
     async do_func(code: string, params: any = {}): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.do_func, {
+        return await window._scopeman.scope_call(window._pyscopeman.do_func, {
             "id": this.id,
             "code": code,
             "params": params
@@ -99,7 +97,7 @@ class PyScope {
     }
 
     async make_func(name: string, code: string, params: any = []): Promise<any> {
-        let fn = await window._scopeman.call(window._pyscopeman.make_func, {
+        let fn = await window._scopeman.scope_call(window._pyscopeman.make_func, {
             "id": this.id,
             "name": name,
             "code": code,
@@ -110,36 +108,36 @@ class PyScope {
     }
 
     async get_var(name: string): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.get_var, {
+        return await window._scopeman.scope_call(window._pyscopeman.get_var, {
             "id": this.id,
             "name": name
         });
     }
 
     async has_var(name: string): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.has_var, {
+        return await window._scopeman.scope_call(window._pyscopeman.has_var, {
             "id": this.id,
             "name": name
         });
     }
 
     async del_var(name: string): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.del_var, {
+        return await window._scopeman.scope_call(window._pyscopeman.del_var, {
             "id": this.id,
             "name": name
         });
     }
 
     async set_var(name: string, value: any): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.set_var, {
+        return await window._scopeman.scope_call(window._pyscopeman.set_var, {
             "id": this.id,
             "name": name,
-            "value": name
+            "value": value
         });
     }
 
-    async call(name: string, args: any, kwargs: any): Promise<any> {
-        return await window._scopeman.call(window._pyscopeman.call, {
+    async call(name: string, args: any[] = [], kwargs: any = {}): Promise<any> {
+        return await window._scopeman.scope_call(window._pyscopeman.call, {
             "id": this.id,
             "name": name,
             "args": args,

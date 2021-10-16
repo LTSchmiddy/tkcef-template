@@ -4,7 +4,8 @@ import sys, pathlib
 from pathlib import Path
 import threading
 import time
-from typing import Type
+import traceback
+from typing import Callable, Type
 
 from cefpython3 import cefpython as cef
 
@@ -104,6 +105,7 @@ class WebApp:
             
         browser.ExecuteJavascript(self.js_preload)
         self.pyscopemanager.config_in_browser(browser)
+        
     
     def create_js_bindings(self) -> cef.JavascriptBindings:
         self.js_bindings = cef.JavascriptBindings()

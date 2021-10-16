@@ -1,4 +1,5 @@
 from __future__ import annotations, generator_stop
+from types import ModuleType
 from typing import Callable, Union
 
 # Example of embedding CEF Python browser using Tkinter toolkit.
@@ -17,6 +18,7 @@ from typing import Callable, Union
 # entry widget otherwise keyboard focus is lost (Issue #255
 # and Issue #284).
 # Other focus issues discussed in Issue #535.
+from types import ModuleType
 
 import threading
 import tkinter as tk
@@ -46,7 +48,6 @@ logger = _logging.getLogger("tkcef")
 IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 
 UPDATE_DELAY = 0.05
-
 
 class AppManager:
     root_frames: dict[str, WebFrame]
@@ -193,3 +194,8 @@ class AppManager:
 from . import webapp
 from .frame import WebFrame
 from .browser_namespace import BrowserNamespaceWrapper
+
+def expose_namespace(module: ModuleType, name: str=None) -> str:
+    return BrowserNamespaceWrapper.create_namespace_if_dne(
+        module.__name__ if name is None else name, use_external = module
+    )
