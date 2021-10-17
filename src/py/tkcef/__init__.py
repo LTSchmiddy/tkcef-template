@@ -27,6 +27,7 @@ import time
 import platform
 import logging as _logging
 import sched
+import uuid
 
 from cefpython3 import cefpython as cef
 
@@ -48,6 +49,10 @@ logger = _logging.getLogger("tkcef")
 IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 
 UPDATE_DELAY = 0.05
+
+def with_uuid4(callback: cef.JavascriptCallback):
+    id = uuid.uuid4()
+    callback.Call(str(id))
 
 class AppManager:
     root_frames: dict[str, WebFrame]
@@ -199,3 +204,4 @@ def expose_namespace(module: ModuleType, name: str=None) -> str:
     return BrowserNamespaceWrapper.create_namespace_if_dne(
         module.__name__ if name is None else name, use_external = module
     )
+

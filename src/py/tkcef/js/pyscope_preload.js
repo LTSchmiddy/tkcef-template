@@ -54,9 +54,9 @@ window._scopeman = new PyScopeManager();
 class PyScope {
     constructor(p_id = null, p_allow_new = false, p_auto_create = true) {
         this.id = p_id;
-        this.allow_new = p_allow_new || p_id === null;
+        this.allow_new = p_allow_new;
         this.is_new = null;
-        if (p_auto_create) {
+        if (p_auto_create && p_id !== null) {
             this.create();
         }
     }

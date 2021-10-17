@@ -9,8 +9,10 @@ from typing import Callable, Type
 
 from cefpython3 import cefpython as cef
 
-from .pyscope import PyScopeManager, BrowserNamespaceWrapper
-
+from . import with_uuid4
+from .browser_namespace import BrowserNamespaceWrapper
+from .pyscope import PyScopeManager
+from .jsobject import JsObjectManager
 from .frame import WebFrame
 
 class WebApp:
@@ -22,6 +24,7 @@ class WebApp:
     document_path: str
     
     pyscopemanager: PyScopeManager
+    jsobjectmanager: JsObjectManager
     js_bindings: cef.JavascriptBindings
 
     tk_frame_class: Type[WebFrame]
@@ -55,6 +58,7 @@ class WebApp:
 
         self.document_path = document_path
         self.pyscopemanager = PyScopeManager()
+        self.jsobjectmanager = JsObjectManager()
         
         self.app_callbacks = AppCallbacks(self)
         
@@ -105,6 +109,7 @@ class WebApp:
             
         browser.ExecuteJavascript(self.js_preload)
         self.pyscopemanager.config_in_browser(browser)
+        self.jsobjectmanager.config_in_browser(browser)
         
     
     def create_js_bindings(self) -> cef.JavascriptBindings:
@@ -114,9 +119,11 @@ class WebApp:
         self.js_bindings.SetProperty("app_manager_key", self.app_manager_key)
         self.js_bindings.SetProperty("app_scope_key", self.app_scope_key)
         self.js_bindings.SetObject("_pyscopeman", self.pyscopemanager)
+        self.js_bindings.SetObject("_py_jsobjectman", self.jsobjectmanager)
         self.js_bindings.SetObject("_pynamespace", BrowserNamespaceWrapper)
         self.js_bindings.SetObject("_app_callbacks", self.app_callbacks)
         self.js_bindings.SetFunction(self.load_page.__name__, self.load_page)
+        self.js_bindings.SetFunction(with_uuid4.__name__, with_uuid4)
         for key, value in self.js_bind_objects.items():
             self.js_bindings.SetObject(key, value)
         self.js_bindings.Rebind()
