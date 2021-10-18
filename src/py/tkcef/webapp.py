@@ -16,15 +16,16 @@ from .js_object import JsObjectManager
 from .js_preload import JsPreloadScript
 from .frame import WebFrame
 
+
 class WebApp:
     browser: cef.PyBrowser = None
     page_code_loader_fn: str = "_load_page_content"
 
     js_preload_path: str
     js_preload: JsPreloadScript
-    
+
     document_path: str
-    
+
     pyscopemanager: PyScopeManager
     jsobjectmanager: JsObjectManager
     js_bindings: cef.JavascriptBindings
@@ -44,55 +45,52 @@ class WebApp:
         *,
         document_path: str = None,
         js_bind_objects: dict = {},
-        tk_frame_class: Type[WebFrame]=WebFrame
+        tk_frame_class: Type[WebFrame] = WebFrame,
     ):
         self.tk_frame: WebFrame = None
         self.tk_frame_class = tk_frame_class
-        
+
         js_preload_path = Path(__file__).parent.joinpath("js/webapp_preload.js")
         self.js_preload = JsPreloadScript.new_from_file_path(js_preload_path)
-            
+
         self.js_bind_objects = js_bind_objects
         self.js_bindings = None
 
         self.document_path = document_path
         self.pyscopemanager = PyScopeManager()
         self.jsobjectmanager = JsObjectManager()
-        
+
         self.app_callbacks = AppCallbacks(self)
-        
 
     def construct_app_webview(
         self, window_info: cef.WindowInfo, client_handlers: list
     ) -> cef.PyBrowser:
-        
+
         self.app_scope = BrowserNamespaceWrapper(self.app_scope_key)
-        self.app_scope.set_var('app', self)
-        
+        self.app_scope.set_var("app", self)
+
         self.create_js_bindings()
         cef.PostTask(cef.TID_UI, self.init_browser, window_info, client_handlers)
 
     def init_browser(self, window_info: cef.WindowInfo, client_handlers: list):
         if self.js_preload is None:
             self.read_js_preload()
-        
-        self.browser: cef.PyBrowser = cef.CreateBrowserSync(
-            window_info
-        )
+
+        self.browser: cef.PyBrowser = cef.CreateBrowserSync(window_info)
         self.browser.SetJavascriptBindings(self.js_bindings)
         # self.browser.ExecuteJavascript(self.js_preload)
 
         for i in client_handlers:
             self.browser.SetClientHandler(i)
-        
+
         if self.document_path is not None:
             self.load_page()
-    
+
     def read_js_preload(self):
         js_file = open(self.js_preload_path, "r")
         self.js_preload = js_file.read()
         js_file.close()
-            
+
     def load_page(self, document_path: str = None):
 
         if document_path is not None:
@@ -103,13 +101,12 @@ class WebApp:
     def on_page_loaded(
         self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int
     ):
-        
+
         self.js_preload.run(browser)
-            
+
         self.pyscopemanager.config_in_browser(browser)
         self.jsobjectmanager.config_in_browser(browser)
-        
-    
+
     def create_js_bindings(self) -> cef.JavascriptBindings:
         self.js_bindings = cef.JavascriptBindings()
         # print(self.on_app_loaded.__name__)
@@ -127,13 +124,14 @@ class WebApp:
         self.js_bindings.Rebind()
 
         return self.js_bindings
-    
+
     def update(self):
         pass
 
 
 class AppCallbacks:
     app: WebApp
+
     def __init__(self, app) -> None:
         self.app = app
 

@@ -50,9 +50,11 @@ IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 
 UPDATE_DELAY = 0.05
 
+
 def with_uuid4(callback: cef.JavascriptCallback):
     id = uuid.uuid4()
     callback.Call(str(id))
+
 
 class AppManager:
     root_frames: dict[str, WebFrame]
@@ -62,7 +64,7 @@ class AppManager:
     thread: threading.Thread
     update_interval: Union[int, float]
     update_sched: sched.scheduler
-    
+
     next_update_event: sched.Event
 
     @property
@@ -151,7 +153,7 @@ class AppManager:
 
     def mainloop(self):
         while self.should_run:
-            # Using sched to control the timing of the mainloop is 
+            # Using sched to control the timing of the mainloop is
             # a lot more consistent than using time.sleep() directly.
             self.next_update_event = self.update_sched.enter(
                 self.update_interval,
@@ -162,7 +164,6 @@ class AppManager:
             )
             self.mainloop_step()
             self.update_sched.run()
-    
 
     def mainloop_step(self):
         # Since we can't manipulate the roots dict while iterating through it,
@@ -180,7 +181,7 @@ class AppManager:
             frame.update_idletasks()
             frame.update()
             frame.app.update()
-            
+
             # else:
             # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")
 
@@ -200,8 +201,8 @@ from . import webapp
 from .frame import WebFrame
 from .browser_namespace import BrowserNamespaceWrapper
 
-def expose_namespace(module: ModuleType, name: str=None) -> str:
-    return BrowserNamespaceWrapper.create_namespace_if_dne(
-        module.__name__ if name is None else name, use_external = module
-    )
 
+def expose_namespace(module: ModuleType, name: str = None) -> str:
+    return BrowserNamespaceWrapper.create_namespace_if_dne(
+        module.__name__ if name is None else name, use_external=module
+    )

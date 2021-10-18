@@ -5,5 +5,5 @@ print("imported")
 shared_value = "Hello Alex"
 
 
-def test_func(): 
+def test_func():
     return "HELLO ALEX"
