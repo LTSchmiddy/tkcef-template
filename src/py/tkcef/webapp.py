@@ -12,7 +12,8 @@ from cefpython3 import cefpython as cef
 from . import with_uuid4
 from .browser_namespace import BrowserNamespaceWrapper
 from .pyscope import PyScopeManager
-from .jsobject import JsObjectManager
+from .js_object import JsObjectManager
+from .js_preload import JsPreloadScript
 from .frame import WebFrame
 
 class WebApp:
@@ -20,7 +21,8 @@ class WebApp:
     page_code_loader_fn: str = "_load_page_content"
 
     js_preload_path: str
-    js_preload: str
+    js_preload: JsPreloadScript
+    
     document_path: str
     
     pyscopemanager: PyScopeManager
@@ -41,17 +43,14 @@ class WebApp:
         self,
         *,
         document_path: str = None,
-        js_preload_path: str = None,
         js_bind_objects: dict = {},
         tk_frame_class: Type[WebFrame]=WebFrame
     ):
         self.tk_frame: WebFrame = None
         self.tk_frame_class = tk_frame_class
         
-        self.js_preload_path = js_preload_path
-        if js_preload_path is None:
-            self.js_preload_path = Path(__file__).parent.joinpath("js/webapp_preload.js")
-        self.js_preload = None
+        js_preload_path = Path(__file__).parent.joinpath("js/webapp_preload.js")
+        self.js_preload = JsPreloadScript.new_from_file_path(js_preload_path)
             
         self.js_bind_objects = js_bind_objects
         self.js_bindings = None
@@ -104,10 +103,9 @@ class WebApp:
     def on_page_loaded(
         self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int
     ):
-        if self.js_preload is None:
-            self.read_js_preload()
+        
+        self.js_preload.run(browser)
             
-        browser.ExecuteJavascript(self.js_preload)
         self.pyscopemanager.config_in_browser(browser)
         self.jsobjectmanager.config_in_browser(browser)
         

@@ -6,25 +6,20 @@ import traceback
 from cefpython3 import cefpython as cef
 
 from util import anon_func as af
-from . import browser_namespace
+from .js_preload import JsPreloadScript
 from .browser_namespace import BrowserNamespaceWrapper
 
 
 class PyScopeManager:
     browser: cef.PyBrowser
 
-    js_preload: str
+    js_preload: JsPreloadScript
 
     def __init__(self):
-
-        js_preload_path = Path(__file__).parent.joinpath("js/pyscope_preload.js")
-
-        js_file = open(js_preload_path, "r")
-        self.js_preload = js_file.read()
-        js_file.close()
+        self.js_preload = JsPreloadScript.new_from_file_path(Path(__file__).parent.joinpath("js/pyscope_preload.js"))
 
     def config_in_browser(self, browser: cef.PyBrowser):
-        browser.ExecuteJavascript(self.js_preload)
+        self.js_preload.run(browser)
     
     def create(
         self, call_id: str, complete_callback: cef.JavascriptCallback, kwargs: dict

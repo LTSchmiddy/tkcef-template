@@ -5,22 +5,19 @@ import traceback
 
 from cefpython3 import cefpython as cef
 
+from .js_preload import JsPreloadScript
 from util import anon_func as af
 
 class JsObjectManager:
     browser: cef.PyBrowser
 
-    js_preload: str
+    js_preload: JsPreloadScript
 
     def __init__(self):
-
-        js_preload_path = Path(__file__).parent.joinpath("js/jsobject_preload.js")
+        self.js_preload = JsPreloadScript.new_from_file_path(Path(__file__).parent.joinpath("js/jsobject_preload.js"))
         
-        js_file = open(js_preload_path, "r")
-        self.js_preload = js_file.read()
-        js_file.close()
         
     def config_in_browser(self, browser: cef.PyBrowser):
-        browser.ExecuteJavascript(self.js_preload)
+        self.js_preload.run(browser)
     
     
