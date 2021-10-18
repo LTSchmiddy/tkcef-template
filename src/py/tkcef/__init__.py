@@ -129,6 +129,9 @@ class AppManager:
         menubar = None
         if menubar_builder is not None:
             menubar = menubar_builder(root)
+        
+        else:
+            menubar = app.construct_menubar(root)
 
         # frame = WebFrame(
         frame = app.tk_frame_class(
@@ -180,7 +183,7 @@ class AppManager:
             # if (threading.currentThread() == self.thread):
             frame.update_idletasks()
             frame.update()
-            frame.app.update()
+            frame.app.run_step()
 
             # else:
             # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")

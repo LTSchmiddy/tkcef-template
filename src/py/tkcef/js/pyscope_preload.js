@@ -62,19 +62,19 @@ class PyScope {
     }
     create() {
         return __awaiter(this, void 0, void 0, function* () {
-            let info = (yield window._scopeman.scope_call(window._pyscopeman.create, { id: this.id, allow_new: this.allow_new }));
+            let info = (yield window._scopeman.scope_call(window._py_scopeman.create, { id: this.id, allow_new: this.allow_new }));
             this.id = info.name;
             this.is_new = info.is_new;
         });
     }
     destroy() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.id = (yield window._scopeman.scope_call(window._pyscopeman.destroy, { id: this.id }));
+            this.id = (yield window._scopeman.scope_call(window._py_scopeman.destroy, { id: this.id }));
         });
     }
     exec(code, ret_name = null, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.exec, {
+            return yield window._scopeman.scope_call(window._py_scopeman.exec, {
                 "id": this.id,
                 "code": code,
                 "ret_name": ret_name,
@@ -84,7 +84,7 @@ class PyScope {
     }
     do_func(code, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.do_func, {
+            return yield window._scopeman.scope_call(window._py_scopeman.do_func, {
                 "id": this.id,
                 "code": code,
                 "params": params
@@ -93,7 +93,7 @@ class PyScope {
     }
     make_func(name, code, params = []) {
         return __awaiter(this, void 0, void 0, function* () {
-            let fn = yield window._scopeman.scope_call(window._pyscopeman.make_func, {
+            let fn = yield window._scopeman.scope_call(window._py_scopeman.make_func, {
                 "id": this.id,
                 "name": name,
                 "code": code,
@@ -104,7 +104,7 @@ class PyScope {
     }
     get_var(name) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.get_var, {
+            return yield window._scopeman.scope_call(window._py_scopeman.get_var, {
                 "id": this.id,
                 "name": name
             });
@@ -112,7 +112,7 @@ class PyScope {
     }
     has_var(name) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.has_var, {
+            return yield window._scopeman.scope_call(window._py_scopeman.has_var, {
                 "id": this.id,
                 "name": name
             });
@@ -120,7 +120,7 @@ class PyScope {
     }
     del_var(name) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.del_var, {
+            return yield window._scopeman.scope_call(window._py_scopeman.del_var, {
                 "id": this.id,
                 "name": name
             });
@@ -128,7 +128,7 @@ class PyScope {
     }
     set_var(name, value) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.set_var, {
+            return yield window._scopeman.scope_call(window._py_scopeman.set_var, {
                 "id": this.id,
                 "name": name,
                 "value": value
@@ -137,7 +137,7 @@ class PyScope {
     }
     call(name, args = [], kwargs = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._pyscopeman.call, {
+            return yield window._scopeman.scope_call(window._py_scopeman.call, {
                 "id": this.id,
                 "name": name,
                 "args": args,

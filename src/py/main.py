@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
         return menubar
 
-    app_man.add_webapp("app1", app1, menubar_builder=construct_menubar)
+    app_man.add_webapp("app1", app1) #, menubar_builder=construct_menubar)
 
     app_man.mainloop()
     app_man.shutdown()

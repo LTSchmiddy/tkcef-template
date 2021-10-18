@@ -81,18 +81,18 @@ class PyScope {
     }
 
     async create() {
-        let info: NewPyScopeInfo = <NewPyScopeInfo>(await window._scopeman.scope_call(window._pyscopeman.create, {id: this.id, allow_new: this.allow_new}));
+        let info: NewPyScopeInfo = <NewPyScopeInfo>(await window._scopeman.scope_call(window._py_scopeman.create, {id: this.id, allow_new: this.allow_new}));
         this.id = info.name;
         this.is_new = info.is_new;
     }
 
     async destroy() {
-        this.id = <string>(await window._scopeman.scope_call(window._pyscopeman.destroy, {id: this.id}));
+        this.id = <string>(await window._scopeman.scope_call(window._py_scopeman.destroy, {id: this.id}));
 
     }
 
     async exec(code: string, ret_name: string|null = null, params: any = {}): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.exec, {
+        return await window._scopeman.scope_call(window._py_scopeman.exec, {
             "id": this.id,
             "code": code,
             "ret_name": ret_name,
@@ -101,7 +101,7 @@ class PyScope {
     }
 
     async do_func(code: string, params: any = {}): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.do_func, {
+        return await window._scopeman.scope_call(window._py_scopeman.do_func, {
             "id": this.id,
             "code": code,
             "params": params
@@ -109,7 +109,7 @@ class PyScope {
     }
 
     async make_func(name: string, code: string, params: any = []): Promise<any> {
-        let fn = await window._scopeman.scope_call(window._pyscopeman.make_func, {
+        let fn = await window._scopeman.scope_call(window._py_scopeman.make_func, {
             "id": this.id,
             "name": name,
             "code": code,
@@ -120,28 +120,28 @@ class PyScope {
     }
 
     async get_var(name: string): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.get_var, {
+        return await window._scopeman.scope_call(window._py_scopeman.get_var, {
             "id": this.id,
             "name": name
         });
     }
 
     async has_var(name: string): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.has_var, {
+        return await window._scopeman.scope_call(window._py_scopeman.has_var, {
             "id": this.id,
             "name": name
         });
     }
 
     async del_var(name: string): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.del_var, {
+        return await window._scopeman.scope_call(window._py_scopeman.del_var, {
             "id": this.id,
             "name": name
         });
     }
 
     async set_var(name: string, value: any): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.set_var, {
+        return await window._scopeman.scope_call(window._py_scopeman.set_var, {
             "id": this.id,
             "name": name,
             "value": value
@@ -149,7 +149,7 @@ class PyScope {
     }
 
     async call(name: string, args: any[] = [], kwargs: any = {}): Promise<any> {
-        return await window._scopeman.scope_call(window._pyscopeman.call, {
+        return await window._scopeman.scope_call(window._py_scopeman.call, {
             "id": this.id,
             "name": name,
             "args": args,

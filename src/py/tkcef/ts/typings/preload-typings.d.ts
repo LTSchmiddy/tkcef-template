@@ -6,7 +6,7 @@ interface Window {
     with_uuid4: Function;
 
     // Private:
-    _pyscopeman: any;
+    _py_scopeman: any;
     _py_jsobjectman: any;
     _app_callbacks: any;
     _handle_py_func: Function;
