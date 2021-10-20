@@ -234,7 +234,14 @@ class WebApp:
         pass
 
     def start(self):
-        pass
+        # pass
+        self.document = self.jsobjectmanager.from_func("return document")
+        self.console = self.jsobjectmanager.from_func("return console")
+        
+        result = self.document.access('return obj.location.href;', {"x": self.document})
+        print(f"{str(result.py())=}")
+        
+        print(self.console.attr('log')("HELLO ALEX, CONSOLE.LOG!!"))
 
     def update(self):
         pass

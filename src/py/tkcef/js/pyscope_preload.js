@@ -8,19 +8,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class PyCall {
+class _PyCall {
     constructor() {
         this.completed = false;
         this.outcome = null;
     }
 }
-class PyScopeManager {
+class _PyScopeManager {
     constructor() {
         this.retVals = {};
     }
     scope_call(scope_fn, kwargs = {}) {
         let call_id = Math.random().toString();
-        this.retVals[call_id] = new PyCall();
+        this.retVals[call_id] = new _PyCall();
         scope_fn(call_id, this._complete_callback.bind(this), kwargs);
         return new Promise((resolve, reject) => {
             this._checkValue(call_id, resolve, reject);
@@ -49,7 +49,7 @@ class PyScopeManager {
     }
 }
 console.log("Loading scope manager...");
-window._scopeman = new PyScopeManager();
+window._scopeman = new _PyScopeManager();
 class PyScope {
     constructor(p_id = null, p_allow_new = false, responsible_to_destroy_if_new = true, p_auto_create = true) {
         this.id = p_id;
@@ -59,7 +59,7 @@ class PyScope {
             this.create(responsible_to_destroy_if_new);
         }
     }
-    create(responsible_to_destroy_if_new) {
+    create(responsible_to_destroy_if_new = true) {
         return __awaiter(this, void 0, void 0, function* () {
             let info = (yield window._scopeman.scope_call(window._py_scopeman.create, { id: this.id, allow_new: this.allow_new }));
             this.is_new = info.is_new;

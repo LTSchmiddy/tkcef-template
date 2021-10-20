@@ -23,4 +23,4 @@ if __name__ == "__main__":
     app_man.add_webapp("app1", app1)
 
     app_man.mainloop()
-    # app_man.shutdown()
+    app_man.shutdown()
