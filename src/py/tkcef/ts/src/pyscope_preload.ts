@@ -1,5 +1,5 @@
 interface ReturnValues {
-    [key: string]: PyCall;
+    [key: string]: _PyCall;
 }
 
 interface NewPyScopeInfo {
@@ -7,7 +7,7 @@ interface NewPyScopeInfo {
     is_new: boolean;
 }
 
-class PyCall {
+class _PyCall {
     completed: boolean;
     outcome: any;
 
@@ -17,7 +17,7 @@ class PyCall {
     }
 }
 
-class PyScopeManager {
+class _PyScopeManager {
     retVals: ReturnValues
 
     constructor() {
@@ -27,7 +27,7 @@ class PyScopeManager {
     scope_call(scope_fn: Function, kwargs = {}) {
         let call_id: string = Math.random().toString();
 
-        this.retVals[call_id] = new PyCall();
+        this.retVals[call_id] = new _PyCall();
         scope_fn(call_id, this._complete_callback.bind(this), kwargs);
         
         return new Promise((resolve: any, reject: any) => {
@@ -44,8 +44,6 @@ class PyScopeManager {
                clearInterval(return_interval_id);
 
                 if (outcome['error'] !== null){
-                    outcome['error'];
-
                     let error = new Error(outcome['error'].message);
                     error.name = outcome['error'].name;
                     error.stack = outcome['error'].stack;
@@ -63,27 +61,43 @@ class PyScopeManager {
     }
 }
 
-console.log("loading scope manager");
-window._scopeman = new PyScopeManager();
+console.log("Loading scope manager...");
+window._scopeman = new _PyScopeManager();
 
 class PyScope {
     id: string|null;
     allow_new: boolean;
     is_new: boolean|null;
 
-    constructor(p_id: string|null = null, p_allow_new: boolean = false, p_auto_create: boolean = true) {
+    constructor(p_id: string|null = null, p_allow_new: boolean = false, responsible_to_destroy_if_new: boolean = true, p_auto_create: boolean = true) {
         this.id = p_id;
         this.allow_new = p_allow_new;
         this.is_new = null;
-        if (p_auto_create && p_id !== null) {
-            this.create();
+        if (p_auto_create) {
+            this.create(responsible_to_destroy_if_new);
         }
     }
 
-    async create() {
+    async create(responsible_to_destroy_if_new: boolean = true) {
         let info: NewPyScopeInfo = <NewPyScopeInfo>(await window._scopeman.scope_call(window._py_scopeman.create, {id: this.id, allow_new: this.allow_new}));
-        this.id = info.name;
         this.is_new = info.is_new;
+
+        if (info.is_new) {
+            this.id = info.name;
+            if (responsible_to_destroy_if_new) {
+                this.set_destroy_on_unload();
+            }
+        }
+    }
+
+    set_destroy_on_unload() {
+        window.addEventListener("beforeunload", this.on_page_unload.bind(this), false);
+    }
+
+    async on_page_unload(e: any) {
+        // If this window created a new scope, we need to destroy it to prevent memory leaks.
+        window.py_print(`CEF is destroying ${this.id}...`);
+        await this.destroy();
     }
 
     async destroy() {
@@ -159,4 +173,4 @@ class PyScope {
 
 }
 
-const app_scope = new PyScope(window.app_scope_key, true);
+let app_scope = new PyScope(window.app_scope_key);

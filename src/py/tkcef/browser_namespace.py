@@ -34,7 +34,7 @@ class BrowserNamespaceWrapper:
             if doc is None:
                 doc = "A unique namespace for running In-Browser Python code."
 
-            self._mod = ModuleType("name", f"(BrowserNamespace: {self._name}) " + doc)
+            self._mod = ModuleType(name, f"(BrowserNamespace: {self._name}) " + doc)
 
         self._mod_locals = {}
         # Lets be honest, I don't there'd ever be much reason for this to be false.
@@ -162,7 +162,7 @@ class BrowserNamespaceWrapper:
 
     @classmethod
     def get_new_namespace_id(cls):
-        new_id = "n-py0"
+        new_id = "ns-py0"
         print(new_id)
         while new_id in cls.namespaces:
             new_id = f"n-py{random.randint(1, cls.max_namespaces)}"
@@ -203,6 +203,7 @@ class BrowserNamespaceWrapper:
     @classmethod
     def remove_namespace(cls, name: str):
         del cls.namespaces[name]
+        print(f"Destroyed namespace '{name}'.")
 
     @classmethod
     def namespace_exists(cls, name: str = ""):

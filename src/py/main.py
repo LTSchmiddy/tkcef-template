@@ -20,22 +20,7 @@ if __name__ == "__main__":
         js_bind_objects=jsbind.bindings,
     )
 
-    def construct_menubar(root: tk.Tk) -> tk.Menu:
-        menubar = tk.Menu(root)
-        filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(
-            label="Open Dev Tools", command=lambda: app1.browser.ShowDevTools()
-        )
-        filemenu.add_command(
-            label="Full Reload", command=lambda: app1.browser.ReloadIgnoreCache()
-        )
-        filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=root.quit)
-        menubar.add_cascade(label="File", menu=filemenu)
-
-        return menubar
-
-    app_man.add_webapp("app1", app1) #, menubar_builder=construct_menubar)
+    app_man.add_webapp("app1", app1)
 
     app_man.mainloop()
-    app_man.shutdown()
+    # app_man.shutdown()

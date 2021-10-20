@@ -32,9 +32,8 @@ class PyScopeManager:
             if not kwargs["allow_new"]:
                 # Making sure the namespace exists, and triggers an error if not:
                 scope = BrowserNamespaceWrapper.namespaces[kwargs["id"]]
-
                 retVal["result"] = {"name": scope.name, "is_new": False}
-
+                
             elif "id" in kwargs and kwargs["id"] is not None:
                 will_create = BrowserNamespaceWrapper.namespace_exists(kwargs["id"])
 

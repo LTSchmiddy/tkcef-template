@@ -34,7 +34,6 @@ class PyScopeManager {
                 delete this.retVals[call_id];
                 clearInterval(return_interval_id);
                 if (outcome['error'] !== null) {
-                    outcome['error'];
                     let error = new Error(outcome['error'].message);
                     error.name = outcome['error'].name;
                     error.stack = outcome['error'].stack;
@@ -49,22 +48,37 @@ class PyScopeManager {
         this.retVals[call_id].completed = true;
     }
 }
-console.log("loading scope manager");
+console.log("Loading scope manager...");
 window._scopeman = new PyScopeManager();
 class PyScope {
-    constructor(p_id = null, p_allow_new = false, p_auto_create = true) {
+    constructor(p_id = null, p_allow_new = false, responsible_to_destroy_if_new = true, p_auto_create = true) {
         this.id = p_id;
         this.allow_new = p_allow_new;
         this.is_new = null;
-        if (p_auto_create && p_id !== null) {
-            this.create();
+        if (p_auto_create) {
+            this.create(responsible_to_destroy_if_new);
         }
     }
-    create() {
+    create(responsible_to_destroy_if_new) {
         return __awaiter(this, void 0, void 0, function* () {
             let info = (yield window._scopeman.scope_call(window._py_scopeman.create, { id: this.id, allow_new: this.allow_new }));
-            this.id = info.name;
             this.is_new = info.is_new;
+            if (info.is_new) {
+                this.id = info.name;
+                if (responsible_to_destroy_if_new) {
+                    this.set_destroy_on_unload();
+                }
+            }
+        });
+    }
+    set_destroy_on_unload() {
+        window.addEventListener("beforeunload", this.on_page_unload.bind(this), false);
+    }
+    on_page_unload(e) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // If this window created a new scope, we need to destroy it to prevent memory leaks.
+            window.py_print(`CEF is destroying ${this.id}...`);
+            yield this.destroy();
         });
     }
     destroy() {
@@ -146,5 +160,5 @@ class PyScope {
         });
     }
 }
-const app_scope = new PyScope(window.app_scope_key, true);
+let app_scope = new PyScope(window.app_scope_key);
 //# sourceMappingURL=pyscope_preload.js.map

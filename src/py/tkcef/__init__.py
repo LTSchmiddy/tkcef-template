@@ -48,9 +48,6 @@ logger = _logging.getLogger("tkcef")
 # Tk 8.5 doesn't support png images
 IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 
-UPDATE_DELAY = 0.05
-
-
 def with_uuid4(callback: cef.JavascriptCallback):
     id = uuid.uuid4()
     callback.Call(str(id))
@@ -98,13 +95,14 @@ class AppManager:
         logger.info("Tk {ver}".format(ver=tk.Tcl().eval("info patchlevel")))
         logger.info("CEF Python {ver}".format(ver=cef.__version__))
         assert cef.__version__ >= "55.3", "CEF Python v55.3+ required to run this"
-        sys.excepthook = cef.ExceptHook  # To shutdown all CEF processes on error
+        sys.excepthook = cef.ExceptHook  
+        # To shutdown all CEF processes on error
         # Tk must be initialized before CEF otherwise fatal error (Issue #306)
-        # Using the multi_threaded_message_loop,
         cef_config = {}
         if MAC:
             cef_config["external_message_pump"] = True
         else:
+            # Using the multi_threaded_message_loop.
             # Helps prevent various GIL-related crashes:
             cef_config["multi_threaded_message_loop"] = True
 
@@ -118,7 +116,7 @@ class AppManager:
         self,
         key: str,
         app: webapp.WebApp,
-        title: str = "Tkinter example",
+        title: str = "TkCef App",
         show_navbar: bool = False,
         geometry: str = "900x640",
         menubar_builder: Callable[[tk.Tk], tk.Menu] = None,
@@ -196,11 +194,15 @@ class AppManager:
             self.keys_to_remove.clear()
 
     def shutdown(self):
-        logger.debug("Main loop exited")
+        logger.debug("CEF is shutting down now...")
         cef.Shutdown()
 
 
-from . import webapp
+    def __del__(self):
+        logger.debug("ALERT: AppManager is being garbage collected.")
+        self.shutdown()
+
+from .webapp import WebApp
 from .frame import WebFrame
 from .browser_namespace import BrowserNamespaceWrapper
 
