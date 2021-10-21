@@ -40,18 +40,14 @@ class JsObjectManager {
         return this.storage[item_id];
     }
 
-    access(item_id: string, access_code: string, args: any = {}, js_object_args: string[] = [], obj_param: string = "obj") {
+    access(item_id: string, access_code: string, args: any = {}, obj_param: string = "obj") {
         let arg_keys = ["id", obj_param]
         let arg_values = [this.get.bind(this), this.storage[item_id]]
 
         for (const [key, value] of Object.entries(args)) {
             // console.log(`${key}: ${value}`);
             arg_keys.push(key);
-            if (js_object_args.includes(key)){
-                arg_values.push(this.get(<string>value));
-            } else {
-                arg_values.push(value);
-            }
+            arg_values.push(value);
         }
         arg_keys.push(access_code);
 
@@ -98,8 +94,19 @@ class JsObjectManager {
     }
 
     // Callbacks to pass to Python:
-    _fadd_fn(item_id: string, collect_code: string, callback: Function) {
-        let item = Function(collect_code)();
+    _fadd_fn(item_id: string, collect_code: string, args: any, callback: Function) {
+
+        let arg_keys = ["id"];
+        let arg_values = [this.get.bind(this)];
+
+        for (const [key, value] of Object.entries(args)) {
+            // console.log(`${key}: ${value}`);
+            arg_keys.push(key);
+            arg_values.push(<any>value);
+        }
+        arg_keys.push(collect_code);
+
+        let item = Function(...arg_keys)(...arg_values);
         this._add_fn(item_id, item, callback);
     }
 
@@ -113,9 +120,9 @@ class JsObjectManager {
         callback();
     }
     
-    _access_fn(item_id: any, access_code: string, args: any, js_object_args: string[], obj_param: string, callback: Function) {
+    _access_fn(item_id: any, access_code: string, args: any, obj_param: string, callback: Function) {
         try {
-            let result = this.access(item_id, access_code, args, js_object_args, obj_param);
+            let result = this.access(item_id, access_code, args, obj_param);
             window.with_uuid4((uuid: string) => {
                 this.add(uuid, result);
                 callback(uuid, null);
