@@ -235,14 +235,18 @@ class WebApp:
 
     def start(self):
         # pass
+        self.window = self.jsobjectmanager.from_func("return window")
         self.document = self.jsobjectmanager.from_func("return document")
         self.console = self.jsobjectmanager.from_func("return console")
-        self.log = self.console.attr("log")
+        self.log = self.console.attr("log")("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
+        self.log = self.console.call_method("log", "using call_method")
         
         result = self.document.access('return obj.location.href;', {"x": self.document})
         print(f"{str(result.py())=}")
         
-        self.log("HELLO ALEX, CONSOLE.LOG!! 2")
+        print(self.document.attr("location").attr("href").py())
+        # print(self.window.set_attr("test_prop", "hello"))
+        # self.log("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
 
     def update(self):
         pass

@@ -5,11 +5,11 @@ interface ObjectStorage {
 class JsObjectManager {
     storage: ObjectStorage;
     
-    send_errors_back: boolean;
+    callback_errors: boolean;
 
     constructor() {
         this.storage = {};
-        this.send_errors_back = false;
+        this.callback_errors = false;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -42,6 +42,16 @@ class JsObjectManager {
         return this.storage[item_id];
     }
 
+    get_list(item_ids: string[]): any[] {
+        let retVal = [];
+
+        for (let i = 0; i < item_ids.length; i++) {
+            retVal.push(this.get(item_ids[i]));
+        }
+
+        return retVal;
+    }
+
     access(item_id: string, access_code: string, args: any = {}, obj_param: string = "obj") {
         let arg_keys = ["id", obj_param]
         let arg_values = [this.get.bind(this), this.storage[item_id]]
@@ -53,7 +63,7 @@ class JsObjectManager {
         }
         arg_keys.push(access_code);
 
-        return Function(...arg_keys)(...arg_values);
+        return Function(...arg_keys).bind(this)(...arg_values);
     }
 
     get_attr (item_id: string, attr_name: string): any {
@@ -61,33 +71,33 @@ class JsObjectManager {
     }
 
     set_attr (item_id: string, attr_name: string, value: any, is_js_object: boolean = false): any {
-        if (is_js_object) {
-            value = this.get(value);
-        }
+        // if (is_js_object) {
+        //     value = this.get(value);
+        // }
 
-        this.storage[item_id][attr_name] = value;
+        this.storage[item_id][attr_name] = this.get(value);
     }
 
-    call(item_id: string, args: any[], js_object_args: number[] = []) {
-        for (let i = 0; i < js_object_args.length; i++) {
-            let val = js_object_args[i];
-            args[val] = this.get(args[val]);
-        }
-
-        return this.storage[item_id](...args);
+    call(item_id: string, args: string, js_object_args: number[] = []) {
+        // for (let i = 0; i < js_object_args.length; i++) {
+        //     let val = js_object_args[i];
+        //     args[val] = this.get(args[val]);
+        // }
+        // console.log(args);
+        return this.storage[item_id](...this.get(args));
     }
 
-    call_method(item_id: string, method_name: string, args: any[], js_object_args: number[] = []) {
-        for (let i = 0; i < js_object_args.length; i++) {
-            let val = js_object_args[i];
-            args[val] = this.get(args[val]);
-        }
+    call_method(item_id: string, method_name: string, args: string, js_object_args: number[] = []) {
+        // for (let i = 0; i < js_object_args.length; i++) {
+        //     let val = js_object_args[i];
+        //     args[val] = this.get(args[val]);
+        // }
 
-        return this.storage[item_id][method_name].bind(this.storage[item_id])(...args);
+        return this.storage[item_id][method_name].bind(this.storage[item_id])(...this.get(args));
     }
 
     _JsCall_error(callback: Function, error: any, code: string = "") {
-        if (this.send_errors_back) {
+        if (this.callback_errors) {
             callback(null, {
                 fn_code: code,
                 name: error.name,
@@ -115,13 +125,13 @@ class JsObjectManager {
         }
         arg_keys.push(collect_code);
 
-        let item = Function(...arg_keys)(...arg_values);
+        let item = Function(...arg_keys).bind(this)(...arg_values);
         this._add_fn(item_id, item, callback);
     }
 
     _add_fn(item_id: string, item: any, callback: Function) {
         this.add(item_id, item);
-        callback();
+        callback(null, null);
     }
 
     _remove_fn(item_id: any, callback: Function) {
@@ -155,6 +165,7 @@ class JsObjectManager {
             let result = this.get_attr(item_id, attr_name);
             window.with_uuid4((uuid: string) => {
                 this.add(uuid, result);
+                console.log(callback)
                 callback(uuid, null);
             });
         } catch (error: any) {
@@ -174,8 +185,9 @@ class JsObjectManager {
         
     }
 
-    _call_fn(item_id: any, args: any[], js_object_args: number[] = [], callback: Function) {
+    _call_fn(item_id: any, args: string, js_object_args: number[] = [], callback: Function) {
         try {
+            // console.log(args);
             let result = this.call(item_id, args, js_object_args);
             window.with_uuid4((uuid: string) => {
                 this.add(uuid, result);
@@ -186,7 +198,7 @@ class JsObjectManager {
         }
         
     }
-    _call_method_fn(item_id: any, method_name: string, args: any[], js_object_args: number[] = [], callback: Function) {
+    _call_method_fn(item_id: any, method_name: string, args: string, js_object_args: number[] = [], callback: Function) {
         try {
             let result = this.call_method(item_id, method_name, args, js_object_args);
             window.with_uuid4((uuid: string) => {
