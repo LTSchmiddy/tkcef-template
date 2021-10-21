@@ -2,6 +2,7 @@
 class JsObjectManager {
     constructor() {
         this.storage = {};
+        this.send_errors_back = false;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -29,18 +30,13 @@ class JsObjectManager {
     get(item_id) {
         return this.storage[item_id];
     }
-    access(item_id, access_code, args = {}, js_object_args = [], obj_param = "obj") {
+    access(item_id, access_code, args = {}, obj_param = "obj") {
         let arg_keys = ["id", obj_param];
         let arg_values = [this.get.bind(this), this.storage[item_id]];
         for (const [key, value] of Object.entries(args)) {
             // console.log(`${key}: ${value}`);
             arg_keys.push(key);
-            if (js_object_args.includes(key)) {
-                arg_values.push(this.get(value));
-            }
-            else {
-                arg_values.push(value);
-            }
+            arg_values.push(value);
         }
         arg_keys.push(access_code);
         return Function(...arg_keys)(...arg_values);
@@ -69,16 +65,31 @@ class JsObjectManager {
         return this.storage[item_id][method_name].bind(this.storage[item_id])(...args);
     }
     _JsCall_error(callback, error, code = "") {
-        callback(null, {
-            fn_code: code,
-            name: error.name,
-            message: error.name,
-            stack: error.stack,
-        });
+        if (this.send_errors_back) {
+            callback(null, {
+                fn_code: code,
+                name: error.name,
+                message: error.name,
+                stack: error.stack,
+            });
+        }
+        else {
+            callback(null, null);
+            console.log(error);
+            // throw error;
+        }
     }
     // Callbacks to pass to Python:
-    _fadd_fn(item_id, collect_code, callback) {
-        let item = Function(collect_code)();
+    _fadd_fn(item_id, collect_code, args, callback) {
+        let arg_keys = ["id"];
+        let arg_values = [this.get.bind(this)];
+        for (const [key, value] of Object.entries(args)) {
+            // console.log(`${key}: ${value}`);
+            arg_keys.push(key);
+            arg_values.push(value);
+        }
+        arg_keys.push(collect_code);
+        let item = Function(...arg_keys)(...arg_values);
         this._add_fn(item_id, item, callback);
     }
     _add_fn(item_id, item, callback) {
@@ -89,9 +100,9 @@ class JsObjectManager {
         this.remove(item_id);
         callback();
     }
-    _access_fn(item_id, access_code, args, js_object_args, obj_param, callback) {
+    _access_fn(item_id, access_code, args, obj_param, callback) {
         try {
-            let result = this.access(item_id, access_code, args, js_object_args, obj_param);
+            let result = this.access(item_id, access_code, args, obj_param);
             window.with_uuid4((uuid) => {
                 this.add(uuid, result);
                 callback(uuid, null);

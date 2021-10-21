@@ -43,15 +43,16 @@ class JsObjectManager:
         print(f"Binding '{name}'...")
         setattr(self, name, callback)
 
-    def from_func(self, fn_code):
-        return JsObject(self, fn_code)
+    def from_func(self, fn_code, params: dict = {}):
+        return JsObject(self, fn_code, params)
     
     def from_id(self, uuid: str) -> JsObject:
-        return JsObject(self, None, uuid)
+        return JsObject(self, None, object_id=uuid)
 
     def ready(self):
         self.is_ready = True
-
+        
+    # def process_object()
 
 class JsCall:
     completed: bool

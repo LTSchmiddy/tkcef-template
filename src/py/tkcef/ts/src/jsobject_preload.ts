@@ -5,9 +5,11 @@ interface ObjectStorage {
 class JsObjectManager {
     storage: ObjectStorage;
     
+    send_errors_back: boolean;
+
     constructor() {
         this.storage = {};
-
+        this.send_errors_back = false;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -85,12 +87,19 @@ class JsObjectManager {
     }
 
     _JsCall_error(callback: Function, error: any, code: string = "") {
-        callback(null, {
-            fn_code: code,
-            name: error.name,
-            message: error.name,
-            stack: error.stack,
-        });
+        if (this.send_errors_back) {
+            callback(null, {
+                fn_code: code,
+                name: error.name,
+                message: error.name,
+                stack: error.stack,
+            });
+        }
+        else {
+            callback(null, null);
+            console.log(error);
+            // throw error;
+        }
     }
 
     // Callbacks to pass to Python:
