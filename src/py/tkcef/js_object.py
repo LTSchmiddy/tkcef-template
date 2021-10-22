@@ -17,6 +17,7 @@ from util import anon_func as af
 
 # Defining custom exceptions first:
 
+
 class JSObjectException(Exception):
     fn_code: str
     name: str
@@ -61,8 +62,11 @@ class JsObjectManager:
     remove_fn: cef.JavascriptCallback
     access_fn: cef.JavascriptCallback
     py_fn: cef.JavascriptCallback
+    get_type_fn: cef.JavascriptCallback
     get_attr_fn: cef.JavascriptCallback
     set_attr_fn: cef.JavascriptCallback
+    has_attr_fn: cef.JavascriptCallback
+    del_attr_fn: cef.JavascriptCallback
     call_fn: cef.JavascriptCallback
     call_method_fn: cef.JavascriptCallback
 
@@ -82,6 +86,21 @@ class JsObjectManager:
     def ready(self):
         self.is_ready = True
     
+    def get_element(self, query: str) -> JsObject:
+        return self.from_func("return document.querySelector(query);", {'query': query})
+    
+    def get_elements(self, query: str) -> JsObject:
+        return self.from_func("return document.querySelectorAll(query);", {'query': query})
+    
+    def get_element_list(self, query: str) -> JsObject:
+        result = self.get_elements(query)
+        retVal = []
+        
+        for i in range(0, result['length'].py()):
+            retVal.append(result[i])
+        
+        return retVal;
+    
     def from_func(self, fn_code, params: dict = {}, convert_args: bool = True):
         return JsObject(self, fn_code, params, convert_args=convert_args)
     
@@ -89,7 +108,10 @@ class JsObjectManager:
         return JsObject(self, None, object_id=uuid)
         
     def from_py(self, obj: Any) -> JsObject:
-        if isinstance(obj, JsObject):
+        if isinstance(obj, cef.JavascriptCallback):
+            return self.from_py(obj.Call)
+        
+        elif isinstance(obj, JsObject):
             if obj.manager == self:
                 return obj
             else:
@@ -115,7 +137,7 @@ class JsObjectManager:
     
 
 class JsObjectManagerCall:
-    log_completions: bool = True
+    log_completions: bool = False
     should_raise_timeout_error: bool = False
 
     label: str
@@ -173,10 +195,20 @@ class JsObjectManagerCall:
     def __str__(self):
         return f"{self.js_object_id} -> {self.label}"
 
-class JsObject(Callable):    
+class JsObject(Callable):
+    REPR_TYPES = (
+        "string",
+        "number",
+        "boolean",
+    )
+    
+    log_destructions: bool = False
+    
     _object_id: str
     manager: JsObjectManager
     destroyed: bool
+    
+    type_string: str
 
     def __init__(self, manager: JsObjectManager, fn_code: str=None, args: Union[dict, JsObject] = {}, *, convert_args: bool = True, object_id: str = None):
         self.destroyed = False
@@ -206,6 +238,9 @@ class JsObject(Callable):
                 self.destroy()
                 raise JSObjectException(**call.error)
 
+        self.type_string = self.get_type()
+        
+        
     def __getitem__(self, key: str) -> JsObject:
         return self.get_attr(key)
     
@@ -224,13 +259,36 @@ class JsObject(Callable):
     
     def __str__(self):
         return self._object_id
+
+    def __repr__(self):
+        retVal = f"{type(self).__name__} {self._object_id}: <{self.type_string}> "
+        if self.type_string in self.REPR_TYPES:
+            retVal += str(self.py())
+        else:
+            retVal += "..."
+        return retVal    
+        
+    # Regular Methods:
+    def _wait_successful(self, call: JsObjectManagerCall):
+        if call.timed_out:
+            if call.should_raise_timeout_error:
+                raise JsObjectManagerCallTimeoutException(call)
+            else:
+                if call.log_completions:
+                    print(f"ERROR: {call} has timed out.")
+                return False
+                
+        if call.error != None:
+            raise JSObjectException(**call.error)
+        
+        return True
     
     def destroy(self):
         self.destroyed = True
         # print(f"Destroying {self._object_id}...")
-        self.manager.remove_fn.Call(self._object_id, lambda: logger.debug(f"Destroyed JsObject {self._object_id}"))
+        self.manager.remove_fn.Call(self._object_id, lambda: (logger.debug(f"Destroyed JsObject {self._object_id}") if self.log_destructions else None))
     
-    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, convert_args: bool = True, *, obj_param = "obj") -> JsObject:
+    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, convert_args: bool = True, *, obj_param = "self") -> JsObject:
         call = JsObjectManagerCall(self, "access")
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.
@@ -246,20 +304,6 @@ class JsObject(Callable):
             return None
             
         return self.manager.from_id(call.result)
-    
-    def _wait_successful(self, call: JsObjectManagerCall):
-        if call.timed_out:
-            if call.should_raise_timeout_error:
-                raise JsObjectManagerCallTimeoutException(call)
-            else:
-                if call.log_completions:
-                    print(f"ERROR: {call} has timed out.")
-                return False
-                
-        if call.error != None:
-            raise JSObjectException(**call.error)
-        
-        return True
         
     def py(self) -> Any:
         call = JsObjectManagerCall(self, "py")
@@ -272,8 +316,19 @@ class JsObject(Callable):
         
         return call.result
     
+    def get_type(self) -> Any:
+        call = JsObjectManagerCall(self, "get_type")
+        self.manager.get_type_fn.Call(self._object_id, call.on_complete)
+        
+        call.wait()
+        
+        if not self._wait_successful(call):
+            return None
+        
+        return call.result
+    
     def get_attr(self, name: str) -> JsObject:
-        call = JsObjectManagerCall(self, "attr")
+        call = JsObjectManagerCall(self, "get_attr")
         self.manager.get_attr_fn.Call(self._object_id, name, call.on_complete)
         
         call.wait()
@@ -287,6 +342,28 @@ class JsObject(Callable):
         
         call = JsObjectManagerCall(self, "set_attr", timeout=None)
         self.manager.set_attr_fn.Call(self._object_id, name, self.manager.from_py(value), call.on_complete)
+        
+        call.wait()
+        
+        if not self._wait_successful(call):
+            return None
+        
+        return call.result
+    
+    def has_attr(self, name: str) -> JsObject:
+        call = JsObjectManagerCall(self, "has_attr")
+        self.manager.has_attr_fn.Call(self._object_id, name, call.on_complete)
+        
+        call.wait()
+        
+        if not self._wait_successful(call):
+            return None
+        
+        return call.result
+    
+    def del_attr(self, name: str) -> JsObject:
+        call = JsObjectManagerCall(self, "del_attr")
+        self.manager.del_attr_fn.Call(self._object_id, name, call.on_complete)
         
         call.wait()
         

@@ -226,11 +226,6 @@ class BrowserFrame(tk.Frame):
 
         self.webframe.app.construct_app_webview(
             window_info,
-            [
-                LifespanHandler(self),
-                LoadHandler(self),
-                FocusHandler(self),
-            ],
         )
 
     def get_window_handle(self):

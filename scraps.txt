@@ -1,0 +1,20 @@
+    def __add__(self, other: Any) -> JsObject:
+        return self.access("return self + other;", {"other": other})
+    
+    def __sub__(self, other: Any) -> JsObject:
+        return self.access("return self - other;", {"other": other})
+    
+    def __mul__(self, other: Any) -> JsObject:
+        return self.access("return self * other;", {"other": other})
+    
+    def __rmul__(self, other: Any) -> JsObject:
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        return self.access("return self / other;", {"other": other})
+    
+    def __rtruediv__(self, other: Any) -> JsObject:
+        return self.access("return other / self;", {"other": other})
+    
+    def __eq__(self, other: Any) -> JsObject:
+        return self.access("return self === other;", {"other": other})

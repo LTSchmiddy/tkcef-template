@@ -8,8 +8,11 @@ class JsObjectManager {
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
         window._py_jsobjectman.append_callback("access_fn", this._access_fn.bind(this));
         window._py_jsobjectman.append_callback("py_fn", this._py_fn.bind(this));
+        window._py_jsobjectman.append_callback("get_type_fn", this._get_type_fn.bind(this));
         window._py_jsobjectman.append_callback("get_attr_fn", this._get_attr_fn.bind(this));
         window._py_jsobjectman.append_callback("set_attr_fn", this._set_attr_fn.bind(this));
+        window._py_jsobjectman.append_callback("has_attr_fn", this._has_attr_fn.bind(this));
+        window._py_jsobjectman.append_callback("del_attr_fn", this._del_attr_fn.bind(this));
         window._py_jsobjectman.append_callback("call_fn", this._call_fn.bind(this));
         window._py_jsobjectman.append_callback("call_method_fn", this._call_method_fn.bind(this));
     }
@@ -29,6 +32,9 @@ class JsObjectManager {
     }
     get(item_id) {
         return this.storage[item_id];
+    }
+    get_type(item_id) {
+        return typeof this.storage[item_id];
     }
     get_list(item_ids) {
         let retVal = [];
@@ -66,6 +72,12 @@ class JsObjectManager {
     }
     set_attr(item_id, attr_name, value) {
         this.storage[item_id][attr_name] = this.get(value);
+    }
+    has_attr(item_id, attr_name) {
+        return attr_name in this.storage[item_id];
+    }
+    del_attr(item_id, attr_name) {
+        delete this.storage[item_id][attr_name];
     }
     call(item_id, args) {
         return this.storage[item_id](...this.get(args));
@@ -134,6 +146,14 @@ class JsObjectManager {
             this._JsCall_error(callback, error);
         }
     }
+    _get_type_fn(item_id, callback) {
+        try {
+            callback(this.get_type(item_id), null);
+        }
+        catch (error) {
+            this._JsCall_error(callback, error);
+        }
+    }
     _get_attr_fn(item_id, attr_name, callback) {
         try {
             let result = this.get_attr(item_id, attr_name);
@@ -150,6 +170,24 @@ class JsObjectManager {
         try {
             this.set_attr(item_id, attr_name, value);
             callback(null, null);
+        }
+        catch (error) {
+            this._JsCall_error(callback, error);
+        }
+    }
+    _has_attr_fn(item_id, attr_name, callback) {
+        try {
+            let result = this.has_attr(item_id, attr_name);
+            callback(result, null);
+        }
+        catch (error) {
+            this._JsCall_error(callback, error);
+        }
+    }
+    _del_attr_fn(item_id, attr_name, callback) {
+        try {
+            let result = this.del_attr(item_id, attr_name);
+            callback(result, null);
         }
         catch (error) {
             this._JsCall_error(callback, error);

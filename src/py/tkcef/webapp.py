@@ -17,7 +17,7 @@ from .browser_namespace import BrowserNamespaceWrapper
 from .pyscope import PyScopeManager
 from .js_object import JsObjectManager
 from .js_preload import JsPreloadScript
-from .frame import WebFrame
+from .frame import FocusHandler, LifespanHandler, LoadHandler, WebFrame
 
 
 class AppCallbacks:
@@ -123,8 +123,15 @@ class WebApp:
     def queue_update_action(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
         self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
     
+    def create_client_handlers(self):
+        return [
+            LifespanHandler(self.tk_frame),
+            LoadHandler(self.tk_frame),
+            FocusHandler(self.tk_frame),
+        ],
+    
     def construct_app_webview(
-        self, window_info: cef.WindowInfo, client_handlers: list
+        self, window_info: cef.WindowInfo
     ) -> cef.PyBrowser:
 
         BrowserNamespaceWrapper.create_namespace_if_dne(self.app_scope_key)
@@ -132,7 +139,7 @@ class WebApp:
         self.app_scope.set_var("app", self)
 
         self.create_js_bindings()
-        cef.PostTask(cef.TID_UI, self.init_browser, window_info, client_handlers)
+        cef.PostTask(cef.TID_UI, self.init_browser, window_info, self.create_client_handlers())
 
     def create_js_bindings(self) -> cef.JavascriptBindings:
         self.js_bindings = cef.JavascriptBindings()
@@ -234,24 +241,7 @@ class WebApp:
         pass
 
     def start(self):
-        # pass
-        self.window = self.js_object_manager.from_func("return window")
-        self.document = self.js_object_manager.from_func("return document")
-        self.console = self.js_object_manager.from_func("return console")
-        # self.log = self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
-        # self.log = self.console.call_method("log", "using call_method")
-        
-        result = self.document.access('return obj.location.href;', self.js_object_manager.from_py({"x": self.document}))
-        # print(f"{str(result.py())=}")
-        
-        test_dict = self.js_object_manager.from_py({"Hello": "Alex", "How are you": "not bad"})
-        # self.console["log"](test_dict)
-        
-        print(self.document["location"]["href"].py())
-        # print(self.window.set_attr("test_prop", "hello"))
-        self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
-
-        self.window.set_attr("test_prop", "hello")
+        pass
             
     def update(self):
         pass
