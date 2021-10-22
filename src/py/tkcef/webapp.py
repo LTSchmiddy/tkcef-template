@@ -238,15 +238,19 @@ class WebApp:
         self.window = self.jsobjectmanager.from_func("return window")
         self.document = self.jsobjectmanager.from_func("return document")
         self.console = self.jsobjectmanager.from_func("return console")
-        self.log = self.console.attr("log")("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
-        self.log = self.console.call_method("log", "using call_method")
+        # self.log = self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
+        # self.log = self.console.call_method("log", "using call_method")
         
-        result = self.document.access('return obj.location.href;', {"x": self.document})
-        print(f"{str(result.py())=}")
+        # result = self.document.access('return obj.location.href;', {"x": self.document})
+        # print(f"{str(result.py())=}")
         
-        print(self.document.attr("location").attr("href").py())
+        
+        test_dict = self.jsobjectmanager.from_py({"Hello": "Alex", "How are you": "not bad"})
+        self.console["log"](test_dict)
+        
+        print(self.document["location"]["href"].py())
         # print(self.window.set_attr("test_prop", "hello"))
-        # self.log("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
+        self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
 
     def update(self):
         pass

@@ -37,6 +37,14 @@ class JsObjectManager {
         }
         return retVal;
     }
+    get_pairs(item_ids) {
+        let retVal = {};
+        for (const [key, value] of Object.entries(item_ids)) {
+            // Looking up both keys AND values from stored objects:
+            retVal[this.get(key)] = this.get(value);
+        }
+        return retVal;
+    }
     access(item_id, access_code, args = {}, obj_param = "obj") {
         let arg_keys = ["id", obj_param];
         let arg_values = [this.get.bind(this), this.storage[item_id]];
@@ -133,6 +141,7 @@ class JsObjectManager {
             let result = this.get_attr(item_id, attr_name);
             window.with_uuid4((uuid) => {
                 this.add(uuid, result);
+                console.log(attr_name);
                 console.log(callback);
                 callback(uuid, null);
             });

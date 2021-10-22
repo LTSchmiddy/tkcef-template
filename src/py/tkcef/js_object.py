@@ -10,6 +10,8 @@ import textwrap
 
 from cefpython3 import cefpython as cef
 
+from . import logger
+
 from .js_preload import JsPreloadScript
 from util import anon_func as af
 
@@ -40,7 +42,7 @@ class JsObjectManager:
         self.js_preload.run(browser)
 
     def append_callback(self, name: str, callback: cef.JavascriptCallback):
-        print(f"Binding '{name}'...")
+        logger.debug(f"Binding cef.JavascriptCallback '{name}' to JsObjectManager instance...")
         setattr(self, name, callback)
 
     def ready(self):
@@ -52,28 +54,35 @@ class JsObjectManager:
     def from_id(self, uuid: str) -> JsObject:
         return JsObject(self, None, object_id=uuid)
         
-    def from_py(self, item: Any) -> JsObject:
-        if isinstance(item, JsObject):
-            if item.manager == self:
-                return item
+    def from_py(self, obj: Any) -> JsObject:
+        if isinstance(obj, JsObject):
+            if obj.manager == self:
+                return obj
             else:
-                return self.from_py(item.py())
+                return self.from_py(obj.py())
         
-        elif isinstance(item, list) or isinstance(item, tuple):
-            items = [self.from_py(i) for i in item]
+        elif isinstance(obj, list) or isinstance(obj, tuple):
+            items = [self.from_py(i) for i in obj]
             retVal = self.from_func("return this.get_list(new_item_ids)", {"new_item_ids": items})
             # del items
             return retVal
         
-        elif isinstance(item, dict):
-            return None
+        elif isinstance(obj, dict):
+            items = {}
+            for key, value in obj.items():
+                items[self.from_py(key)] = self.from_py(value)
+            
+            retVal = self.from_func("return this.get_pairs(new_item_ids)", {"new_item_ids": items})
+            return retVal
         
         else:
-            return self.from_func("return new_item;", {"new_item": item})
+            return self.from_func("return new_item;", {"new_item": obj})
         
     
 
 class JsCall:
+    call_on_complete: Callable = lambda x: None
+    
     completed: bool
     result: Any
     error: Any
@@ -83,10 +92,13 @@ class JsCall:
         self.result = None
         self.error = None
         
+        
     def on_complete_callback(self, result, error=None):
         self.result = result
         self.error = error
         self.completed = True
+        
+        self.call_on_complete(self)
         
     def wait(self):
         while not self.completed:
@@ -134,11 +146,17 @@ class JsObject(Callable):
             self.manager.fadd_fn.Call(self._object_id, fn_code, params, call.on_complete_callback)
             call.wait()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> JsObject:
         return self.attr(key)
     
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> JsObject:
         return self.set_attr(key, value)
+
+    def __call__(self, *args, **kwargs) -> JsObject:
+        if len(kwargs) > 0:
+            args += (kwargs,)
+        
+        return self.call(*args)
 
     def __del__(self):
         if not self.destroyed:
@@ -147,16 +165,10 @@ class JsObject(Callable):
     def __str__(self):
         return self._object_id
     
-    def __call__(self, *args, **kwargs) -> JsObject:
-        if len(kwargs) > 0:
-            args += (kwargs,)
-        
-        return self.call(*args)
-    
     def destroy(self):
         self.destroyed = True
         # print(f"Destroying {self._object_id}...")
-        self.manager.remove_fn.Call(self._object_id, lambda: print(f"Destroyed {self._object_id}"))
+        self.manager.remove_fn.Call(self._object_id, lambda: logger.debug(f"Destroyed JsObject {self._object_id}"))
     
     def access(self, fn_code: str, args={}, obj_param = "obj") -> JsObject:
         call = JsCall()
@@ -172,7 +184,7 @@ class JsObject(Callable):
             
         return self.manager.from_id(call.result)
     
-    def py(self):
+    def py(self) -> Any:
         call = JsCall()
         self.manager.py_fn.Call(self._object_id, call.on_complete_callback)
         
@@ -183,7 +195,7 @@ class JsObject(Callable):
         
         return call.result
     
-    def call(self, *args):
+    def call(self, *args) -> JsObject:
         js_object_args = []
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.
@@ -210,7 +222,7 @@ class JsObject(Callable):
         
         return self.manager.from_id(call.result)
     
-    def call_method(self, method_name: str, *args):
+    def call_method(self, method_name: str, *args) -> JsObject:
         js_object_args = []
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.
