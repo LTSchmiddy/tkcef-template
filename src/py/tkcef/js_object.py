@@ -235,12 +235,12 @@ class JsObject(Callable):
         
         call.wait()
         
-        if not self.wait_successful(call):
+        if not self._wait_successful(call):
             return None
             
         return self.manager.from_id(call.result)
     
-    def wait_successful(self, call: JsObjectManagerCall):
+    def _wait_successful(self, call: JsObjectManagerCall):
         if call.timed_out:
             if call.should_raise_timeout_error:
                 raise JsObjectManagerCallTimeoutException(call)
@@ -260,7 +260,7 @@ class JsObject(Callable):
         
         call.wait()
         
-        if not self.wait_successful(call):
+        if not self._wait_successful(call):
             return None
         
         return call.result
@@ -271,7 +271,7 @@ class JsObject(Callable):
         
         call.wait()
         
-        if not self.wait_successful(call):
+        if not self._wait_successful(call):
             return None
         
         return self.manager.from_id(call.result)
@@ -283,7 +283,7 @@ class JsObject(Callable):
         
         call.wait()
         
-        if not self.wait_successful(call):
+        if not self._wait_successful(call):
             return None
         
         return self.manager.from_id(call.result)
@@ -299,7 +299,7 @@ class JsObject(Callable):
         
         call.wait()
         
-        if not self.wait_successful(call):
+        if not self._wait_successful(call):
             return None
         
         return self.manager.from_id(call.result)
@@ -312,7 +312,7 @@ class JsObject(Callable):
         
         call.wait()
         
-        if not self.wait_successful(call):
+        if not self._wait_successful(call):
             return None
         
         return self.manager.from_id(call.result)
