@@ -235,8 +235,8 @@ class JsObject(Callable):
         
         call.wait()
         
-        if call.error != None:
-            raise JSObjectException(**call.error)
+        if not self.wait_successful(call):
+            return None
             
         return self.manager.from_id(call.result)
     
