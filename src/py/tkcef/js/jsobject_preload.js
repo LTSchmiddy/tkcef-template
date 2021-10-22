@@ -2,7 +2,7 @@
 class JsObjectManager {
     constructor() {
         this.storage = {};
-        this.callback_errors = false;
+        this.callback_errors = true;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -46,6 +46,11 @@ class JsObjectManager {
         return retVal;
     }
     access(item_id, access_code, args = {}, obj_param = "obj") {
+        if ((typeof args) === "string") {
+            // Assume Python gave us a JsObject instead of a dict.
+            // In which case, look of the JsObject
+            args = this.get(args);
+        }
         let arg_keys = ["id", obj_param];
         let arg_values = [this.get.bind(this), this.storage[item_id]];
         for (const [key, value] of Object.entries(args)) {
@@ -60,9 +65,6 @@ class JsObjectManager {
         return this.storage[item_id][attr_name];
     }
     set_attr(item_id, attr_name, value) {
-        // if (is_js_object) {
-        //     value = this.get(value);
-        // }
         this.storage[item_id][attr_name] = this.get(value);
     }
     call(item_id, args) {
@@ -88,6 +90,11 @@ class JsObjectManager {
     }
     // Callbacks to pass to Python:
     _fadd_fn(item_id, collect_code, args, callback) {
+        if ((typeof args) === "string") {
+            // Assume Python gave us a JsObject instead of a dict.
+            // In which case, look of the JsObject
+            args = this.get(args);
+        }
         let arg_keys = ["id"];
         let arg_values = [this.get.bind(this)];
         for (const [key, value] of Object.entries(args)) {
@@ -132,8 +139,6 @@ class JsObjectManager {
             let result = this.get_attr(item_id, attr_name);
             window.with_uuid4((uuid) => {
                 this.add(uuid, result);
-                console.log(attr_name);
-                console.log(callback);
                 callback(uuid, null);
             });
         }

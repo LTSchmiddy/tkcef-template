@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import traceback
-from typing import Any, Callable
+from typing import Any, Callable, Union
 import uuid
 import threading
 import time
@@ -169,6 +169,7 @@ class JsObjectManagerCall:
                     self.timed_out = True
                     return
 
+    
     def __str__(self):
         return f"{self.js_object_id} -> {self.label}"
 
@@ -177,7 +178,7 @@ class JsObject(Callable):
     manager: JsObjectManager
     destroyed: bool
 
-    def __init__(self, manager: JsObjectManager, fn_code: str=None, params: dict = {}, object_id: str = None):
+    def __init__(self, manager: JsObjectManager, fn_code: str=None, args: Union[dict, JsObject] = {}, *, convert_args: bool = False, object_id: str = None):
         self.destroyed = False
         
         self._object_id = object_id
@@ -187,8 +188,11 @@ class JsObject(Callable):
         self.manager = manager
 
         if fn_code is not None:
+            if convert_args:
+                args = self.manager.from_py(args)
+            
             call = JsObjectManagerCall(self, 'fadd')
-            self.manager.fadd_fn.Call(self._object_id, fn_code, params, call.on_complete)
+            self.manager.fadd_fn.Call(self._object_id, fn_code, args, call.on_complete)
             call.wait()
             
             # If there's an error during an object's __init__, its __del__ never be called.
@@ -226,10 +230,13 @@ class JsObject(Callable):
         # print(f"Destroying {self._object_id}...")
         self.manager.remove_fn.Call(self._object_id, lambda: logger.debug(f"Destroyed JsObject {self._object_id}"))
     
-    def access(self, fn_code: str, args={}, obj_param = "obj") -> JsObject:
+    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, *, convert_args: bool = False, obj_param = "obj") -> JsObject:
         call = JsObjectManagerCall(self, "access")
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.
+        
+        if convert_args:
+            args = self.manager.from_py(args)
         
         self.manager.access_fn.Call(self._object_id, fn_code, args, obj_param, call.on_complete)
         

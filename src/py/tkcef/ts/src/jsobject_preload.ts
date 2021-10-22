@@ -9,7 +9,7 @@ class JsObjectManager {
 
     constructor() {
         this.storage = {};
-        this.callback_errors = false;
+        this.callback_errors = true;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -64,6 +64,12 @@ class JsObjectManager {
     }
 
     access(item_id: string, access_code: string, args: any = {}, obj_param: string = "obj") {
+        if ((typeof args) === "string") {
+            // Assume Python gave us a JsObject instead of a dict.
+            // In which case, look of the JsObject
+            args = this.get(args);
+        }
+
         let arg_keys = ["id", obj_param]
         let arg_values = [this.get.bind(this), this.storage[item_id]]
 
@@ -82,10 +88,6 @@ class JsObjectManager {
     }
 
     set_attr (item_id: string, attr_name: string, value: any): any {
-        // if (is_js_object) {
-        //     value = this.get(value);
-        // }
-
         this.storage[item_id][attr_name] = this.get(value);
     }
 
@@ -115,6 +117,11 @@ class JsObjectManager {
 
     // Callbacks to pass to Python:
     _fadd_fn(item_id: string, collect_code: string, args: any, callback: Function) {
+        if ((typeof args) === "string") {
+            // Assume Python gave us a JsObject instead of a dict.
+            // In which case, look of the JsObject
+            args = this.get(args);
+        }
 
         let arg_keys = ["id"];
         let arg_values = [this.get.bind(this)];
@@ -166,8 +173,6 @@ class JsObjectManager {
             let result = this.get_attr(item_id, attr_name);
             window.with_uuid4((uuid: string) => {
                 this.add(uuid, result);
-                console.log(attr_name);
-                console.log(callback);
                 callback(uuid, null);
             });
         } catch (error: any) {

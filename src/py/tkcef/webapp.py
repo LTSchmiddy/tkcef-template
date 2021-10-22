@@ -66,7 +66,7 @@ class WebApp:
     js_bind_objects: dict[str, Any]
 
     pyscopemanager: PyScopeManager
-    jsobjectmanager: JsObjectManager
+    js_object_manager: JsObjectManager
     js_bindings: cef.JavascriptBindings
 
     tk_frame_class: Type[WebFrame]
@@ -105,7 +105,7 @@ class WebApp:
 
         self.document_path = document_path
         self.pyscopemanager = PyScopeManager()
-        self.jsobjectmanager = JsObjectManager()
+        self.js_object_manager = JsObjectManager()
 
         self._on_update_queue = queue.Queue()
 
@@ -147,7 +147,7 @@ class WebApp:
         self.js_bindings.SetFunction(with_uuid4.__name__, with_uuid4)
         
         self.js_bindings.SetObject("_py_scopeman", self.pyscopemanager)
-        self.js_bindings.SetObject("_py_jsobjectman", self.jsobjectmanager)
+        self.js_bindings.SetObject("_py_jsobjectman", self.js_object_manager)
         self.js_bindings.SetObject("_app_callbacks", self.app_callbacks)
         
         # Bind specified properties, functions, and objects.
@@ -189,13 +189,13 @@ class WebApp:
         
         self.js_preload.run(browser)
         self.pyscopemanager.config_in_browser(browser)
-        self.jsobjectmanager.config_in_browser(browser)
+        self.js_object_manager.config_in_browser(browser)
     
     def set_geometry(self, width: int, height: int):
         self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
     
     def run_step(self):
-        if not self.jsobjectmanager.is_ready:
+        if not self.js_object_manager.is_ready:
             return
 
         # Could we set up a callback with the JsObjectManager? Sure.
@@ -235,24 +235,22 @@ class WebApp:
 
     def start(self):
         # pass
-        self.window = self.jsobjectmanager.from_func("return window")
-        self.document = self.jsobjectmanager.from_func("return document")
-        self.console = self.jsobjectmanager.from_func("return console")
+        self.window = self.js_object_manager.from_func("return window")
+        self.document = self.js_object_manager.from_func("return document")
+        self.console = self.js_object_manager.from_func("return console")
         # self.log = self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
         # self.log = self.console.call_method("log", "using call_method")
         
-        # result = self.document.access('return obj.location.href;', {"x": self.document})
+        # result = self.document.access('return obj.location.href;', self.js_object_manager.from_py({"x": self.document}))
         # print(f"{str(result.py())=}")
         
-        
-        test_dict = self.jsobjectmanager.from_py({"Hello": "Alex", "How are you": "not bad"})
-        self.console["log"](test_dict)
+        # test_dict = self.js_object_manager.from_py({"Hello": "Alex", "How are you": "not bad"})
+        # self.console["log"](test_dict)
         
         print(self.document["location"]["href"].py())
         # print(self.window.set_attr("test_prop", "hello"))
         self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
 
-        
         self.window.set_attr("test_prop", "hello")
             
     def update(self):
