@@ -116,6 +116,7 @@ class JsObjectManager:
 
 class JsObjectManagerCall:
     log_completions: bool = True
+    should_raise_timeout_error: bool = False
 
     label: str
     js_object_id: JsObject
@@ -239,17 +240,28 @@ class JsObject(Callable):
             
         return self.manager.from_id(call.result)
     
+    def wait_successful(self, call: JsObjectManagerCall):
+        if call.timed_out:
+            if call.should_raise_timeout_error:
+                raise JsObjectManagerCallTimeoutException(call)
+            else:
+                if call.log_completions:
+                    print(f"ERROR: {call} has timed out.")
+                return False
+                
+        if call.error != None:
+            raise JSObjectException(**call.error)
+        
+        return True
+        
     def py(self) -> Any:
         call = JsObjectManagerCall(self, "py")
         self.manager.py_fn.Call(self._object_id, call.on_complete)
         
         call.wait()
         
-        if call.timed_out:
-            raise JsObjectManagerCallTimeoutException(call)
-        
-        if call.error != None:
-            raise JSObjectException(**call.error)
+        if not self.wait_successful(call):
+            return None
         
         return call.result
     
@@ -268,11 +280,8 @@ class JsObject(Callable):
         
         call.wait()
         
-        if call.timed_out:
-            raise JsObjectManagerCallTimeoutException(call)
-        
-        if call.error != None:
-            raise JSObjectException(**call.error)
+        if not self.wait_successful(call):
+            return None
         
         return self.manager.from_id(call.result)
     
@@ -286,11 +295,8 @@ class JsObject(Callable):
         
         call.wait()
         
-        if call.timed_out:
-            raise JsObjectManagerCallTimeoutException(call)
-        
-        if call.error != None:
-            raise JSObjectException(**call.error)
+        if not self.wait_successful(call):
+            return None
         
         return self.manager.from_id(call.result)
     
@@ -300,11 +306,8 @@ class JsObject(Callable):
         
         call.wait()
         
-        if call.timed_out:
-            raise JsObjectManagerCallTimeoutException(call)
-        
-        if call.error != None:
-            raise JSObjectException(**call.error)
+        if not self.wait_successful(call):
+            return None
         
         return self.manager.from_id(call.result)
     
@@ -316,10 +319,7 @@ class JsObject(Callable):
         
         call.wait()
         
-        if call.timed_out:
-            raise JsObjectManagerCallTimeoutException(call)
-        
-        if call.error != None:
-            raise JSObjectException(**call.error)
+        if not self.wait_successful(call):
+            return None
         
         return self.manager.from_id(call.result)
