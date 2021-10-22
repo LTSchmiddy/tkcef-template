@@ -82,8 +82,8 @@ class JsObjectManager:
     def ready(self):
         self.is_ready = True
     
-    def from_func(self, fn_code, params: dict = {}):
-        return JsObject(self, fn_code, params)
+    def from_func(self, fn_code, params: dict = {}, convert_args: bool = True):
+        return JsObject(self, fn_code, params, convert_args=convert_args)
     
     def from_id(self, uuid: str) -> JsObject:
         return JsObject(self, None, object_id=uuid)
@@ -97,7 +97,7 @@ class JsObjectManager:
         
         elif isinstance(obj, list) or isinstance(obj, tuple):
             items = [self.from_py(i) for i in obj]
-            retVal = self.from_func("return this.get_list(new_item_ids)", {"new_item_ids": items})
+            retVal = self.from_func("return this.get_list(new_item_ids)", {"new_item_ids": items}, False)
             # del items
             return retVal
         
@@ -106,11 +106,11 @@ class JsObjectManager:
             for key, value in obj.items():
                 items[self.from_py(key)] = self.from_py(value)
             
-            retVal = self.from_func("return this.get_pairs(new_item_ids)", {"new_item_ids": items})
+            retVal = self.from_func("return this.get_pairs(new_item_ids)", {"new_item_ids": items}, False)
             return retVal
         
         else:
-            return self.from_func("return new_item;", {"new_item": obj})
+            return self.from_func("return new_item;", {"new_item": obj}, False)
         
     
 
@@ -178,7 +178,7 @@ class JsObject(Callable):
     manager: JsObjectManager
     destroyed: bool
 
-    def __init__(self, manager: JsObjectManager, fn_code: str=None, args: Union[dict, JsObject] = {}, *, convert_args: bool = False, object_id: str = None):
+    def __init__(self, manager: JsObjectManager, fn_code: str=None, args: Union[dict, JsObject] = {}, *, convert_args: bool = True, object_id: str = None):
         self.destroyed = False
         
         self._object_id = object_id
@@ -230,7 +230,7 @@ class JsObject(Callable):
         # print(f"Destroying {self._object_id}...")
         self.manager.remove_fn.Call(self._object_id, lambda: logger.debug(f"Destroyed JsObject {self._object_id}"))
     
-    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, *, convert_args: bool = False, obj_param = "obj") -> JsObject:
+    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, *, convert_args: bool = True, obj_param = "obj") -> JsObject:
         call = JsObjectManagerCall(self, "access")
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.

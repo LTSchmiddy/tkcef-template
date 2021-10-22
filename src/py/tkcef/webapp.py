@@ -241,10 +241,10 @@ class WebApp:
         # self.log = self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
         # self.log = self.console.call_method("log", "using call_method")
         
-        # result = self.document.access('return obj.location.href;', self.js_object_manager.from_py({"x": self.document}))
+        result = self.document.access('return obj.location.href;', self.js_object_manager.from_py({"x": self.document}))
         # print(f"{str(result.py())=}")
         
-        # test_dict = self.js_object_manager.from_py({"Hello": "Alex", "How are you": "not bad"})
+        test_dict = self.js_object_manager.from_py({"Hello": "Alex", "How are you": "not bad"})
         # self.console["log"](test_dict)
         
         print(self.document["location"]["href"].py())
