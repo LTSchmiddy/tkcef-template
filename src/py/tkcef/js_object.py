@@ -230,7 +230,7 @@ class JsObject(Callable):
         # print(f"Destroying {self._object_id}...")
         self.manager.remove_fn.Call(self._object_id, lambda: logger.debug(f"Destroyed JsObject {self._object_id}"))
     
-    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, *, convert_args: bool = True, obj_param = "obj") -> JsObject:
+    def access(self, fn_code: str, args: Union[dict, JsObject] = {}, convert_args: bool = True, *, obj_param = "obj") -> JsObject:
         call = JsObjectManagerCall(self, "access")
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.
