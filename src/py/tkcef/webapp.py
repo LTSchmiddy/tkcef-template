@@ -29,30 +29,32 @@ class AppCallbacks:
     def on_js_title_change(self, new_title: str):
         self.app.tk_frame.set_title(new_title)
 
+
 class UpdateAction(Callable):
-        # This class holds the definition for a function/method call
-        # so it can triggered later. Used for queueing calls that must
-        # performed on Tk's main/update thread. 
-        fn: Callable
-        args: tuple[Any]
-        kwargs: dict[str, Any]
-        
-        def __init__(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
-            if isinstance(fn, cef.JavascriptCallback):
-                self.fn = fn.Call;
-            else:
-                self.fn = fn;
-            self.args = args
-            self.kwargs = kwargs
-            
-        def call(self) -> Any:
-            return self.fn(*self.args, **self.kwargs)
-        
-        def __call__(self) -> Any:
-            return self.call()
+    # This class holds the definition for a function/method call
+    # so it can triggered later. Used for queueing calls that must
+    # performed on Tk's main/update thread.
+    fn: Callable
+    args: tuple[Any]
+    kwargs: dict[str, Any]
+
+    def __init__(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
+        if isinstance(fn, cef.JavascriptCallback):
+            self.fn = fn.Call
+        else:
+            self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    def call(self) -> Any:
+        return self.fn(*self.args, **self.kwargs)
+
+    def __call__(self) -> Any:
+        return self.call()
+
 
 class WebApp:
-    
+
     browser: cef.PyBrowser = None
     page_code_loader_fn: str = "_load_page_content"
 
@@ -60,7 +62,7 @@ class WebApp:
     js_preload: JsPreloadScript
 
     document_path: str
-    
+
     js_bind_properties: dict[str, Any]
     js_bind_functions: dict[str, Any]
     js_bind_objects: dict[str, Any]
@@ -100,7 +102,7 @@ class WebApp:
         self.js_bind_properties = js_bind_properties
         self.js_bind_functions = js_bind_functions
         self.js_bind_objects = js_bind_objects
-        
+
         self.js_bindings = None
 
         self.document_path = document_path
@@ -114,49 +116,50 @@ class WebApp:
 
     def __del__(self):
         pass
-    
+
     def _on_destroy(self):
         # Destroy the app scope once the app is closed:
         if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
             BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
-    
-    def _construct_app_webview(
-        self, window_info: cef.WindowInfo
-    ) -> cef.PyBrowser:
+
+    def _construct_app_webview(self, window_info: cef.WindowInfo) -> cef.PyBrowser:
 
         BrowserNamespaceWrapper.create_namespace_if_dne(self.app_scope_key)
         self.app_scope = BrowserNamespaceWrapper.namespaces[self.app_scope_key]
         self.app_scope.set_var("app", self)
 
         self._create_js_bindings()
-        cef.PostTask(cef.TID_UI, self._init_browser, window_info, self.create_client_handlers())
+        cef.PostTask(
+            cef.TID_UI, self._init_browser, window_info, self.create_client_handlers()
+        )
 
     def _create_js_bindings(self) -> cef.JavascriptBindings:
         self.js_bindings = cef.JavascriptBindings()
 
         self.js_bindings.SetProperty("app_manager_key", self.app_manager_key)
         self.js_bindings.SetProperty("app_scope_key", self.app_scope_key)
-        
+
         self.js_bindings.SetFunction("py_print", print)
-        self.js_bindings.SetFunction(self.queue_update_action.__name__, self.queue_update_action)
+        self.js_bindings.SetFunction(
+            self.queue_update_action.__name__, self.queue_update_action
+        )
         self.js_bindings.SetFunction(self.set_geometry.__name__, self.set_geometry)
         self.js_bindings.SetFunction(self.load_page.__name__, self.load_page)
         self.js_bindings.SetFunction(with_uuid4.__name__, with_uuid4)
-        
+
         self.js_bindings.SetObject("_py_scopeman", self.pyscopemanager)
         self.js_bindings.SetObject("_py_jsobjectman", self.js_object_manager)
         self.js_bindings.SetObject("_app_callbacks", self.app_callbacks)
-        
+
         # Bind specified properties, functions, and objects.
         for method, pairs in {
             self.js_bindings.SetProperty: self.js_bind_properties,
             self.js_bindings.SetFunction: self.js_bind_functions,
-            self.js_bindings.SetObject: self.js_bind_objects
+            self.js_bindings.SetObject: self.js_bind_objects,
         }.items():
             for key, value in pairs.items():
                 method(key, value)
-        
-        
+
         self.additional_js_binds()
         self.js_bindings.Rebind()
 
@@ -176,37 +179,17 @@ class WebApp:
         self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int
     ):
         self._first_loop = True
-        
+
         self.js_preload.run(browser)
         self.pyscopemanager.config_in_browser(browser)
         self.js_object_manager.config_in_browser(browser)
 
-    def load_page(self, document_path: str = None):
-
-        if document_path is not None:
-            self.document_path = document_path
-
-        self.browser.LoadUrl(self.document_path)
-    
-    def queue_update_action(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
-        self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
-    
-    def create_client_handlers(self):
-        return [
-            LifespanHandler(self.tk_frame),
-            LoadHandler(self.tk_frame),
-            FocusHandler(self.tk_frame),
-        ],
-    
-    def set_geometry(self, width: int, height: int):
-        self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
-    
     def _run_step(self):
         if not self.js_object_manager.is_ready:
             return
 
         # Could we set up a callback with the JsObjectManager? Sure.
-        # But this way, we're certain that we're running this 'start' 
+        # But this way, we're certain that we're running this 'start'
         # method on the main thread (I.E, tkinter's update thread).
         if self._first_loop:
             logger.debug(f"Now running {self.app_manager_key}...")
@@ -216,10 +199,33 @@ class WebApp:
         # Handle queued actions:
         while not self._on_update_queue.empty():
             self._on_update_queue.get().call()
-        
+
         # Update as normal:
         self.update()
 
+    def load_page(self, document_path: str = None):
+
+        if document_path is not None:
+            self.document_path = document_path
+
+        self.browser.LoadUrl(self.document_path)
+
+    def queue_update_action(
+        self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs
+    ):
+        self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
+
+    def create_client_handlers(self):
+        return (
+            [
+                LifespanHandler(self.tk_frame),
+                LoadHandler(self.tk_frame),
+                FocusHandler(self.tk_frame),
+            ],
+        )
+
+    def set_geometry(self, width: int, height: int):
+        self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
 
     # In most cases, these 4 methods are the main ones you want to override:
     def construct_menubar(self, root: tk.Tk) -> tk.Menu:
@@ -242,6 +248,6 @@ class WebApp:
 
     def start(self):
         pass
-            
+
     def update(self):
         pass

@@ -158,7 +158,7 @@ class WebFrame(tk.Frame):
 
     def on_close(self):
         self.app._on_destroy()
-        
+
         if self.browser_frame:
             self.browser_frame.on_root_close()
             self.browser_frame = None

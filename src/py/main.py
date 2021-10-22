@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     doc_path = settings.webpack_dir.joinpath("index.html").absolute().as_uri()
     print(f"{doc_path=}")
-    
+
     app_man = AppManager()
     # app1 = WebApp(
     #     document_path=doc_path,

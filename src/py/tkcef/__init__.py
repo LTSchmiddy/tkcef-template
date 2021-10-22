@@ -48,6 +48,7 @@ logger = _logging.getLogger("tkcef")
 # Tk 8.5 doesn't support png images
 IMAGE_EXT = ".png" if tk.TkVersion > 8.5 else ".gif"
 
+
 def with_uuid4(callback: cef.JavascriptCallback):
     id = uuid.uuid4()
     callback.Call(str(id))
@@ -95,7 +96,7 @@ class AppManager:
         logger.info("Tk {ver}".format(ver=tk.Tcl().eval("info patchlevel")))
         logger.info("CEF Python {ver}".format(ver=cef.__version__))
         assert cef.__version__ >= "55.3", "CEF Python v55.3+ required to run this"
-        sys.excepthook = cef.ExceptHook  
+        sys.excepthook = cef.ExceptHook
         # To shutdown all CEF processes on error
         # Tk must be initialized before CEF otherwise fatal error (Issue #306)
         cef_config = {}
@@ -127,7 +128,7 @@ class AppManager:
         menubar = None
         if menubar_builder is not None:
             menubar = menubar_builder(root)
-        
+
         else:
             menubar = app.construct_menubar(root)
 
@@ -197,10 +198,10 @@ class AppManager:
         logger.debug("CEF is shutting down now...")
         cef.Shutdown()
 
-
     def __del__(self):
         logger.debug("ALERT: AppManager is being garbage collected.")
         self.shutdown()
+
 
 from .webapp import WebApp
 from .js_object import JsObject
