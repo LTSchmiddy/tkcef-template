@@ -59,25 +59,16 @@ class JsObjectManager {
     get_attr(item_id, attr_name) {
         return this.storage[item_id][attr_name];
     }
-    set_attr(item_id, attr_name, value, is_js_object = false) {
+    set_attr(item_id, attr_name, value) {
         // if (is_js_object) {
         //     value = this.get(value);
         // }
         this.storage[item_id][attr_name] = this.get(value);
     }
-    call(item_id, args, js_object_args = []) {
-        // for (let i = 0; i < js_object_args.length; i++) {
-        //     let val = js_object_args[i];
-        //     args[val] = this.get(args[val]);
-        // }
-        // console.log(args);
+    call(item_id, args) {
         return this.storage[item_id](...this.get(args));
     }
-    call_method(item_id, method_name, args, js_object_args = []) {
-        // for (let i = 0; i < js_object_args.length; i++) {
-        //     let val = js_object_args[i];
-        //     args[val] = this.get(args[val]);
-        // }
+    call_method(item_id, method_name, args) {
         return this.storage[item_id][method_name].bind(this.storage[item_id])(...this.get(args));
     }
     _JsCall_error(callback, error, code = "") {
@@ -150,19 +141,19 @@ class JsObjectManager {
             this._JsCall_error(callback, error);
         }
     }
-    _set_attr_fn(item_id, attr_name, value, is_js_object, callback) {
+    _set_attr_fn(item_id, attr_name, value, callback) {
         try {
-            this.set_attr(item_id, attr_name, value, is_js_object);
+            this.set_attr(item_id, attr_name, value);
             callback(null, null);
         }
         catch (error) {
             this._JsCall_error(callback, error);
         }
     }
-    _call_fn(item_id, args, js_object_args = [], callback) {
+    _call_fn(item_id, args, callback) {
         try {
             // console.log(args);
-            let result = this.call(item_id, args, js_object_args);
+            let result = this.call(item_id, args);
             window.with_uuid4((uuid) => {
                 this.add(uuid, result);
                 callback(uuid, null);
@@ -172,9 +163,9 @@ class JsObjectManager {
             this._JsCall_error(callback, error);
         }
     }
-    _call_method_fn(item_id, method_name, args, js_object_args = [], callback) {
+    _call_method_fn(item_id, method_name, args, callback) {
         try {
-            let result = this.call_method(item_id, method_name, args, js_object_args);
+            let result = this.call_method(item_id, method_name, args);
             window.with_uuid4((uuid) => {
                 this.add(uuid, result);
                 callback(uuid, null);

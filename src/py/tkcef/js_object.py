@@ -265,41 +265,6 @@ class JsObject(Callable):
         
         return call.result
     
-    def call(self, *args) -> JsObject:
-        js_object_args = []
-        # Check to see which args are other JsObjects. If any are, we'll let 
-        # CEF know to replace those with their actual JavaScript counterparts.
-                    
-        pass_args = self.manager.from_py(args)
-        
-        call = JsObjectManagerCall(self, "call")
-        # self.manager.call_fn.Call(self._object_id, args, js_object_args, call.on_complete_callback)
-        self.manager.call_fn.Call(self._object_id, pass_args, js_object_args, call.on_complete)
-        
-        # del args_test
-        
-        call.wait()
-        
-        if not self.wait_successful(call):
-            return None
-        
-        return self.manager.from_id(call.result)
-    
-    def call_method(self, method_name: str, *args) -> JsObject:
-        js_object_args = []
-        
-        pass_args = self.manager.from_py(args)
-        
-        call = JsObjectManagerCall(self, "call_method")
-        self.manager.call_method_fn.Call(self._object_id, method_name, pass_args, js_object_args, call.on_complete)
-        
-        call.wait()
-        
-        if not self.wait_successful(call):
-            return None
-        
-        return self.manager.from_id(call.result)
-    
     def get_attr(self, name: str) -> JsObject:
         call = JsObjectManagerCall(self, "attr")
         self.manager.get_attr_fn.Call(self._object_id, name, call.on_complete)
@@ -312,10 +277,9 @@ class JsObject(Callable):
         return self.manager.from_id(call.result)
     
     def set_attr(self, name: str, value: Any) -> JsObject:
-        is_js_object = False
         
         call = JsObjectManagerCall(self, "set_attr", timeout=None)
-        self.manager.set_attr_fn.Call(self._object_id, name, self.manager.from_py(value), is_js_object, call.on_complete)
+        self.manager.set_attr_fn.Call(self._object_id, name, self.manager.from_py(value), call.on_complete)
         
         call.wait()
         
@@ -323,3 +287,34 @@ class JsObject(Callable):
             return None
         
         return self.manager.from_id(call.result)
+    
+    def call(self, *args) -> JsObject:                   
+        pass_args = self.manager.from_py(args)
+        
+        call = JsObjectManagerCall(self, "call")
+        # self.manager.call_fn.Call(self._object_id, args, js_object_args, call.on_complete_callback)
+        self.manager.call_fn.Call(self._object_id, pass_args, call.on_complete)
+        
+        # del args_test
+        
+        call.wait()
+        
+        if not self.wait_successful(call):
+            return None
+        
+        return self.manager.from_id(call.result)
+    
+    def call_method(self, method_name: str, *args) -> JsObject:
+        pass_args = self.manager.from_py(args)
+        
+        call = JsObjectManagerCall(self, "call_method")
+        self.manager.call_method_fn.Call(self._object_id, method_name, pass_args, call.on_complete)
+        
+        call.wait()
+        
+        if not self.wait_successful(call):
+            return None
+        
+        return self.manager.from_id(call.result)
+    
+
