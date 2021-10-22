@@ -252,5 +252,8 @@ class WebApp:
         # print(self.window.set_attr("test_prop", "hello"))
         self.console["log"]("HELLO ALEX, CONSOLE.LOG!! 2", "HELLO")
 
+        
+        self.window.set_attr("test_prop", "hello")
+            
     def update(self):
         pass

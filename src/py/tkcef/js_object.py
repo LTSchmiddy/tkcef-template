@@ -311,15 +311,15 @@ class JsObject(Callable):
     def set_attr(self, name: str, value: Any) -> JsObject:
         is_js_object = False
         
-        call = JsObjectManagerCall(self, "set_attr")
+        call = JsObjectManagerCall(self, "set_attr", timeout=None)
         self.manager.set_attr_fn.Call(self._object_id, name, self.manager.from_py(value), is_js_object, call.on_complete)
         
-        # call.wait()
+        call.wait()
         
-        # if call.timed_out:
-        #     raise JsObjectManagerCallTimeoutException(call)
+        if call.timed_out:
+            raise JsObjectManagerCallTimeoutException(call)
         
-        # if call.error != None:
-        #     raise JSObjectException(**call.error)
+        if call.error != None:
+            raise JSObjectException(**call.error)
         
-        # return self.manager.from_id(call.result)
+        return self.manager.from_id(call.result)

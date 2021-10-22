@@ -16,7 +16,7 @@ class JsObjectManager {
         window._py_jsobjectman.append_callback("access_fn", this._access_fn.bind(this));
         window._py_jsobjectman.append_callback("py_fn", this._py_fn.bind(this));
         window._py_jsobjectman.append_callback("get_attr_fn", this._get_attr_fn.bind(this));
-        window._py_jsobjectman.append_callback("set_attr_fn", this._get_attr_fn.bind(this));
+        window._py_jsobjectman.append_callback("set_attr_fn", this._set_attr_fn.bind(this));
         window._py_jsobjectman.append_callback("call_fn", this._call_fn.bind(this));
         window._py_jsobjectman.append_callback("call_method_fn", this._call_method_fn.bind(this));
     }
