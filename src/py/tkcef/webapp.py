@@ -115,7 +115,10 @@ class WebApp:
     def __del__(self):
         pass
     
-    
+    def _on_destroy(self):
+        # Destroy the app scope once the app is closed:
+        if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
+            BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
     
     def _construct_app_webview(
         self, window_info: cef.WindowInfo
@@ -184,11 +187,6 @@ class WebApp:
             self.document_path = document_path
 
         self.browser.LoadUrl(self.document_path)
-    
-    def on_destroy(self):
-        # Destroy the app scope once the app is closed:
-        if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
-            BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
     
     def queue_update_action(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
         self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
