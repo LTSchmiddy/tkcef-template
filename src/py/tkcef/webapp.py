@@ -115,22 +115,9 @@ class WebApp:
     def __del__(self):
         pass
     
-    def on_destroy(self):
-        # Destroy the app scope once the app is closed:
-        if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
-            BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
     
-    def queue_update_action(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
-        self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
     
-    def create_client_handlers(self):
-        return [
-            LifespanHandler(self.tk_frame),
-            LoadHandler(self.tk_frame),
-            FocusHandler(self.tk_frame),
-        ],
-    
-    def construct_app_webview(
+    def _construct_app_webview(
         self, window_info: cef.WindowInfo
     ) -> cef.PyBrowser:
 
@@ -138,10 +125,10 @@ class WebApp:
         self.app_scope = BrowserNamespaceWrapper.namespaces[self.app_scope_key]
         self.app_scope.set_var("app", self)
 
-        self.create_js_bindings()
-        cef.PostTask(cef.TID_UI, self.init_browser, window_info, self.create_client_handlers())
+        self._create_js_bindings()
+        cef.PostTask(cef.TID_UI, self._init_browser, window_info, self.create_client_handlers())
 
-    def create_js_bindings(self) -> cef.JavascriptBindings:
+    def _create_js_bindings(self) -> cef.JavascriptBindings:
         self.js_bindings = cef.JavascriptBindings()
 
         self.js_bindings.SetProperty("app_manager_key", self.app_manager_key)
@@ -172,7 +159,7 @@ class WebApp:
 
         return self.js_bindings
 
-    def init_browser(self, window_info: cef.WindowInfo, client_handlers: list):
+    def _init_browser(self, window_info: cef.WindowInfo, client_handlers: list):
         self.browser: cef.PyBrowser = cef.CreateBrowserSync(window_info)
         self.browser.SetJavascriptBindings(self.js_bindings)
 
@@ -182,14 +169,7 @@ class WebApp:
         if self.document_path is not None:
             self.load_page()
 
-    def load_page(self, document_path: str = None):
-
-        if document_path is not None:
-            self.document_path = document_path
-
-        self.browser.LoadUrl(self.document_path)
-    
-    def on_page_loaded(
+    def _on_page_loaded(
         self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int
     ):
         self._first_loop = True
@@ -197,11 +177,33 @@ class WebApp:
         self.js_preload.run(browser)
         self.pyscopemanager.config_in_browser(browser)
         self.js_object_manager.config_in_browser(browser)
+
+    def load_page(self, document_path: str = None):
+
+        if document_path is not None:
+            self.document_path = document_path
+
+        self.browser.LoadUrl(self.document_path)
+    
+    def on_destroy(self):
+        # Destroy the app scope once the app is closed:
+        if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
+            BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
+    
+    def queue_update_action(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
+        self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
+    
+    def create_client_handlers(self):
+        return [
+            LifespanHandler(self.tk_frame),
+            LoadHandler(self.tk_frame),
+            FocusHandler(self.tk_frame),
+        ],
     
     def set_geometry(self, width: int, height: int):
         self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
     
-    def run_step(self):
+    def _run_step(self):
         if not self.js_object_manager.is_ready:
             return
 

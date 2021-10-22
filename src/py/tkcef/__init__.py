@@ -181,7 +181,7 @@ class AppManager:
             # if (threading.currentThread() == self.thread):
             frame.update_idletasks()
             frame.update()
-            frame.app.run_step()
+            frame.app._run_step()
 
             # else:
             # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")

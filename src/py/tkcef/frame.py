@@ -28,7 +28,7 @@ class LoadHandler(object):
             self.browser_frame.master.navigation_bar.set_url(browser.GetUrl())
 
     def OnLoadEnd(self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int):
-        self.browser_frame.webframe.app.on_page_loaded(browser, frame, http_code)
+        self.browser_frame.webframe.app._on_page_loaded(browser, frame, http_code)
 
 
 class FocusHandler(object):
@@ -224,7 +224,7 @@ class BrowserFrame(tk.Frame):
         # self.browser = cef.CreateBrowserSync(window_info,
         #                                      url="https://www.google.com/")
 
-        self.webframe.app.construct_app_webview(
+        self.webframe.app._construct_app_webview(
             window_info,
         )
 
