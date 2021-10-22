@@ -15,7 +15,41 @@ from . import logger
 from .js_preload import JsPreloadScript
 from util import anon_func as af
 
+# Defining custom exceptions first:
 
+class JSObjectException(Exception):
+    fn_code: str
+    name: str
+    message: str
+    stack: str
+    def __init__(self, fn_code: str=None, name: str="", message: str="", stack: str=""):
+        self.fn_code = fn_code
+        self.name = name
+        self.message = message
+        self.stack = stack
+
+    def __str__(self):
+        retVal = ""
+        
+        if self.fn_code is not None and self.fn_code.strip() != "":
+            indented_fn_code = textwrap.indent(self.fn_code, '\t')
+            retVal += f"Error while executing JavaScript code:\n{indented_fn_code}\n\n"
+        
+        indented_stack = textwrap.indent(self.stack, '\t')
+        retVal += f"JavaScript Error:\n{indented_stack}"
+        
+        return retVal
+    
+class JsObjectManagerCallTimeoutException(Exception):
+    call: JsObjectManagerCall
+    
+    def __init__(self, call: JsObjectManagerCall):
+        self.call = call
+        
+    def __str__(self):
+        return f"JsObjectManagerCall '{self.call.label}' timed out after waiting {self.call.wait_time}."
+
+# Class definitions:
 class JsObjectManager:
     is_ready: bool
     browser: cef.PyBrowser
@@ -80,53 +114,57 @@ class JsObjectManager:
         
     
 
-class JsCall:
-    call_on_complete: Callable = lambda x: None
+class JsObjectManagerCall:
+    callback: Callable = lambda x: None
+    timeout: float = 5.0
+    
+    label: str
     
     completed: bool
+    timed_out: bool
+    start_time: float
+    wait_time: float
     result: Any
     error: Any
-    
-    def __init__(self):
+
+    # We'll wait 5 seconds by default:
+    def __init__(self, timeout: float = 5.0, *, label: str=None):
+        # If timeout is None or <= 0, then we simply wait forever.
+        self.timeout = timeout
+        self.label = label
+        
         self.completed = False
+        self.timed_out = False
+        self.start_time = None
+        self.wait_time = 0
         self.result = None
         self.error = None
-        
-        
-    def on_complete_callback(self, result, error=None):
+
+    def on_complete(self, result=None, error=None):
         self.result = result
         self.error = error
         self.completed = True
         
-        self.call_on_complete(self)
+        # If start_time is None, we never started waiting:
+        if self.start_time is not None:
+            logger.debug(f"JsObjectManagerCall '{self.label}' completed after waiting {time.monotonic() - self.start_time} sec.")
         
-    def wait(self):
+        self.callback(self)
+        
+    def wait(self, timeout: float = None):
+        if timeout is not None:
+            self.timeout = timeout
+        
+        self.start_time = time.monotonic()
         while not self.completed:
-            pass
+            self.wait_time = time.monotonic() - self.start_time
+            # Handle timing out:
+            if self.timeout is not None and self.timeout > 0:
+                if self.wait_time > self.timeout:
+                    self.timed_out = True
+                    return
 
-class JSObjectException(Exception):
-    fn_code: str
-    name: str
-    message: str
-    stack: str
-    def __init__(self, fn_code: str=None, name: str="", message: str="", stack: str=""):
-        self.fn_code = fn_code
-        self.name = name
-        self.message = message
-        self.stack = stack
 
-    def __str__(self):
-        retVal = ""
-        
-        if self.fn_code is not None and self.fn_code.strip() != "":
-            indented_fn_code = textwrap.indent(self.fn_code, '\t')
-            retVal += f"Error while executing JavaScript code:\n{indented_fn_code}\n\n"
-        
-        indented_stack = textwrap.indent(self.stack, '\t')
-        retVal += f"JavaScript Error:\n{indented_stack}"
-        
-        return retVal
-            
 class JsObject(Callable):    
     _object_id: str
     manager: JsObjectManager
@@ -142,9 +180,20 @@ class JsObject(Callable):
         self.manager = manager
 
         if fn_code is not None:
-            call = JsCall()
-            self.manager.fadd_fn.Call(self._object_id, fn_code, params, call.on_complete_callback)
+            call = JsObjectManagerCall()
+            self.manager.fadd_fn.Call(self._object_id, fn_code, params, call.on_complete)
             call.wait()
+            
+            # If there's an error during an object's __init__, its __del__ never be called.
+            # So if we want to raise anerror in a constructor, we need to manually clear
+            # any data that the constructor stored, using self.destroy().
+            if call.timed_out:
+                self.destroy()
+                raise JsObjectManagerCallTimeoutException(call)
+            
+            if call.error != None:
+                self.destroy()
+                raise JSObjectException(**call.error)
 
     def __getitem__(self, key: str) -> JsObject:
         return self.attr(key)
@@ -171,11 +220,11 @@ class JsObject(Callable):
         self.manager.remove_fn.Call(self._object_id, lambda: logger.debug(f"Destroyed JsObject {self._object_id}"))
     
     def access(self, fn_code: str, args={}, obj_param = "obj") -> JsObject:
-        call = JsCall()
+        call = JsObjectManagerCall()
         # Check to see which args are other JsObjects. If any are, we'll let 
         # CEF know to replace those with their actual JavaScript counterparts.
         
-        self.manager.access_fn.Call(self._object_id, fn_code, args, obj_param, call.on_complete_callback)
+        self.manager.access_fn.Call(self._object_id, fn_code, args, obj_param, call.on_complete)
         
         call.wait()
         
@@ -185,10 +234,13 @@ class JsObject(Callable):
         return self.manager.from_id(call.result)
     
     def py(self) -> Any:
-        call = JsCall()
-        self.manager.py_fn.Call(self._object_id, call.on_complete_callback)
+        call = JsObjectManagerCall()
+        self.manager.py_fn.Call(self._object_id, call.on_complete)
         
         call.wait()
+        
+        if call.timed_out:
+            raise JsObjectManagerCallTimeoutException(call)
         
         if call.error != None:
             raise JSObjectException(**call.error)
@@ -209,13 +261,16 @@ class JsObject(Callable):
                     
         pass_args = self.manager.from_py(args)
         
-        call = JsCall()
+        call = JsObjectManagerCall()
         # self.manager.call_fn.Call(self._object_id, args, js_object_args, call.on_complete_callback)
-        self.manager.call_fn.Call(self._object_id, pass_args, js_object_args, call.on_complete_callback)
+        self.manager.call_fn.Call(self._object_id, pass_args, js_object_args, call.on_complete)
         
         # del args_test
         
         call.wait()
+        
+        if call.timed_out:
+            raise JsObjectManagerCallTimeoutException(call)
         
         if call.error != None:
             raise JSObjectException(**call.error)
@@ -224,22 +279,16 @@ class JsObject(Callable):
     
     def call_method(self, method_name: str, *args) -> JsObject:
         js_object_args = []
-        # Check to see which args are other JsObjects. If any are, we'll let 
-        # CEF know to replace those with their actual JavaScript counterparts.
-        # for i in range(0, len(args)):
-        #     if isinstance(args[i], JsObject):
-        #         obj: JsObject = args[i]
-        #         if obj.manager == self.manager:
-        #             js_object_args.append(i)
-        #         else:
-        #             args[i] = obj.py()
         
         pass_args = self.manager.from_py(args)
         
-        call = JsCall()
-        self.manager.call_method_fn.Call(self._object_id, method_name, pass_args, js_object_args, call.on_complete_callback)
+        call = JsObjectManagerCall()
+        self.manager.call_method_fn.Call(self._object_id, method_name, pass_args, js_object_args, call.on_complete)
         
         call.wait()
+        
+        if call.timed_out:
+            raise JsObjectManagerCallTimeoutException(call)
         
         if call.error != None:
             raise JSObjectException(**call.error)
@@ -247,10 +296,13 @@ class JsObject(Callable):
         return self.manager.from_id(call.result)
     
     def attr(self, name: str) -> JsObject:
-        call = JsCall()
-        self.manager.get_attr_fn.Call(self._object_id, name, call.on_complete_callback)
+        call = JsObjectManagerCall()
+        self.manager.get_attr_fn.Call(self._object_id, name, call.on_complete)
         
         call.wait()
+        
+        if call.timed_out:
+            raise JsObjectManagerCallTimeoutException(call)
         
         if call.error != None:
             raise JSObjectException(**call.error)
@@ -260,11 +312,13 @@ class JsObject(Callable):
     def set_attr(self, name: str, value: Any) -> JsObject:
         is_js_object = False
         
-        
-        call = JsCall()
-        self.manager.set_attr_fn.Call(self._object_id, name, self.manager.from_py(value), is_js_object, call.on_complete_callback)
+        call = JsObjectManagerCall()
+        self.manager.set_attr_fn.Call(self._object_id, name, self.manager.from_py(value), is_js_object, call.on_complete)
         
         # call.wait()
+        
+        # if call.timed_out:
+        #     raise JsObjectManagerCallTimeoutException(call)
         
         # if call.error != None:
         #     raise JSObjectException(**call.error)
