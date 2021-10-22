@@ -134,7 +134,11 @@ class JsObject(Callable):
             self.manager.fadd_fn.Call(self._object_id, fn_code, params, call.on_complete_callback)
             call.wait()
 
-
+    def __getitem__(self, key):
+        return self.attr(key)
+    
+    def __setitem__(self, key, value):
+        return self.set_attr(key, value)
 
     def __del__(self):
         if not self.destroyed:
