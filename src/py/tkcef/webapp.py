@@ -128,9 +128,11 @@ class WebApp:
         self.app_scope = BrowserNamespaceWrapper.namespaces[self.app_scope_key]
         self.app_scope.set_var("app", self)
 
+        # self.handlers = self.create_client_handlers()
+        
         self._create_js_bindings()
         cef.PostTask(
-            cef.TID_UI, self._init_browser, window_info, self.create_client_handlers()
+            cef.TID_UI, self._init_browser, window_info
         )
 
     def _create_js_bindings(self) -> cef.JavascriptBindings:
@@ -165,11 +167,13 @@ class WebApp:
 
         return self.js_bindings
 
-    def _init_browser(self, window_info: cef.WindowInfo, client_handlers: list):
+    def _init_browser(self, window_info: cef.WindowInfo):
         self.browser: cef.PyBrowser = cef.CreateBrowserSync(window_info)
         self.browser.SetJavascriptBindings(self.js_bindings)
 
-        for i in client_handlers:
+        
+        for i in self.create_client_handlers():
+            print(f"{i=}")
             self.browser.SetClientHandler(i)
 
         if self.document_path is not None:
@@ -216,13 +220,12 @@ class WebApp:
         self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
 
     def create_client_handlers(self):
-        return (
-            [
-                LifespanHandler(self.tk_frame),
-                LoadHandler(self.tk_frame),
-                FocusHandler(self.tk_frame),
-            ],
-        )
+        return [
+            LifespanHandler(self.tk_frame.browser_frame),
+            LoadHandler(self.tk_frame.browser_frame),
+            FocusHandler(self.tk_frame.browser_frame),
+        ]
+        
 
     def set_geometry(self, width: int, height: int):
         self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
