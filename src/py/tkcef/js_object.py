@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import traceback
-from typing import Any, Callable, Union
+from typing import Any, Callable, Union, get_type_hints
 import uuid
 import threading
 import time
@@ -115,7 +115,7 @@ class JsObjectManager:
         return retVal
 
     def get_js_type(self, item) -> str:
-        return self.from_py(item).get_type()
+        return self.from_py(item).get_js_type()
         
     def from_func(self, fn_code, params: dict = {}, convert_args: bool = True):
         return JsObject(self, fn_code, params, convert_args=convert_args)
@@ -230,8 +230,7 @@ class JsObject(Callable):
     _object_id: str
     manager: JsObjectManager
     destroyed: bool
-
-    type_string: str
+    js_type: str
 
     def __init__(
         self,
@@ -269,7 +268,7 @@ class JsObject(Callable):
                 self.destroy()
                 raise JSObjectException(**call.error)
 
-        self.type_string = self.get_type()
+        self.js_type = self.get_js_type()
 
     def __getitem__(self, key: str) -> JsObject:
         return self.get_attr(key)
@@ -291,12 +290,33 @@ class JsObject(Callable):
         return self._object_id
 
     def __repr__(self):
-        retVal = f"{type(self).__name__} {self._object_id}: <{self.type_string}> "
-        if self.type_string in self.REPR_TYPES:
+        retVal = f"{type(self).__name__} {self._object_id}: <{self.js_type}> "
+        if self.js_type in self.REPR_TYPES:
             retVal += str(self.py())
         else:
             retVal += "..."
         return retVal
+
+    def __getattr__(self, name: str) -> Any:
+        props = self._get_js_properties()
+        if name in props.keys():
+            return self[name]
+        
+        raise AttributeError(name)
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        props = self._get_js_properties()
+        if name in props.keys():
+            self[name] = value
+            return None
+        
+        return super().__setattr__(name, value)
+
+    def _get_js_properties(self) -> dict[str, type[JsObject]]:
+        return dict(filter(
+            lambda elem: issubclass(elem[1], JsObject),
+            get_type_hints(type(self)).items()
+        ))
 
     # Regular Methods:
     def _wait_successful(self, call: JsObjectManagerCall):
@@ -362,7 +382,7 @@ class JsObject(Callable):
 
         return call.result
 
-    def get_type(self) -> Any:
+    def get_js_type(self) -> Any:
         call = JsObjectManagerCall(self, "get_type")
         self.manager.get_type_fn.Call(self._object_id, call.on_complete)
 

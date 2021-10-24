@@ -34,7 +34,7 @@ class PyScopeManager:
         for i in args:
             new_obj = self.js_object_manager.from_id(i)
             
-            if do_auto_convert and new_obj.type_string in self.auto_convert_types:
+            if do_auto_convert and new_obj.js_type in self.auto_convert_types:
                 retVal.append(new_obj.py())
             else:
                 retVal.append(new_obj)
@@ -47,7 +47,7 @@ class PyScopeManager:
         for key, value in kwargs.items():
             new_obj = self.js_object_manager.from_id(value)
             
-            if do_auto_convert and new_obj.type_string in self.auto_convert_types:
+            if do_auto_convert and new_obj.js_type in self.auto_convert_types:
                 retVal[key] = new_obj.py()
             else:
                 retVal[key] = new_obj

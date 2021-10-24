@@ -24,6 +24,8 @@ class TestApp(tkcef.WebApp):
     def start(self):
         self.window = self.js_object_manager.from_func("return window;")
         print(repr(self.window))       
+        
+        print(f"{self.window._get_js_properties()=}")
     
     def update(self):
         pass
