@@ -105,7 +105,25 @@ class PyScope {
 
     }
 
-    async exec(code: string, ret_name: string|null = null, params: any = {}): Promise<any> {
+    async make_w_args(args: any[]) {
+        let arg_ids: any[] = [];
+        for (let i = 0; i < args.length; i++) {
+            arg_ids.push(await JsObject(args[i]));
+        }
+
+        return arg_ids;
+    }
+    async make_w_kwargs(kwargs: any){
+        let kwarg_ids: any = {};
+        for (const [key, value] of Object.entries(kwargs)) {
+            // Looking up both keys AND values from stored objects:
+            kwarg_ids[key] = await JsObject(value);
+        }
+
+        return kwarg_ids;
+    }
+
+    async exec(code: string, params: any = {}, ret_name: string|null = null): Promise<any> {
         return await window._scopeman.scope_call(window._py_scopeman.exec, {
             "id": this.id,
             "code": code,
@@ -114,11 +132,38 @@ class PyScope {
         });
     }
 
+    async aw_exec(code: string, params: any = {}, ret_name: string|null = null): Promise<any> {
+        return await this.w_exec(code, params, ret_name, true);
+    }
+
+    async w_exec(code: string, params: any = {}, ret_name: string|null = null, do_auto_convert: boolean = false): Promise<any> {
+        return await window._scopeman.scope_call(window._py_scopeman.w_exec_runner, {
+            "id": this.id,
+            "code": code,
+            "ret_name": ret_name,
+            "params": await this.make_w_kwargs(params),
+            "do_auto_convert": do_auto_convert
+        });
+    }
+
     async do_func(code: string, params: any = {}): Promise<any> {
         return await window._scopeman.scope_call(window._py_scopeman.do_func, {
             "id": this.id,
             "code": code,
             "params": params
+        });
+    }
+
+    async aw_do_func(code: string, params: any = {}): Promise<any> {
+        return await this.w_do_func(code, params, true);
+    }
+
+    async w_do_func(code: string, params: any = {}, do_auto_convert: boolean = false): Promise<any> {
+        return await window._scopeman.scope_call(window._py_scopeman.w_do_func_runner, {
+            "id": this.id,
+            "code": code,
+            "params": await this.make_w_kwargs(params),
+            "do_auto_convert": do_auto_convert
         });
     }
 
@@ -162,8 +207,12 @@ class PyScope {
         });
     }
 
-    async call(name: string, args: any[] = [], kwargs: any = {}): Promise<any> {
-        return await window._scopeman.scope_call(window._py_scopeman.call, {
+    async call(name: string, ...args: string[]) {
+        return await this.call_kw(name, args);
+    }
+
+    async call_kw(name: string, args: any[] = [], kwargs: any = {}): Promise<any> {
+        return await window._scopeman.scope_call(window._py_scopeman.raw_call_runner, {
             "id": this.id,
             "name": name,
             "args": args,
@@ -171,6 +220,31 @@ class PyScope {
         });
     }
 
+    async aw_call(name: string, ...args: string[]): Promise<any> {
+        return await this.w_call_kw(name, args, {}, true);
+    }
+
+    async aw_call_kw(name: string, args: any[] = [], kwargs: any = {}): Promise<any> {
+        return await this.w_call_kw(name, args, kwargs, true);
+    }
+
+    async w_call(name: string, ...args: string[]): Promise<any> {
+        return await this.w_call_kw(name, args);
+    }
+
+
+
+    async w_call_kw(name: string, args: any[] = [], kwargs: any = {}, auto_convert: boolean = false): Promise<any> {
+        // return await window._scopeman.scope_call(window._py_scopeman.w_call_runner, {
+        return await window._scopeman.scope_call(window._py_scopeman.w_call_runner, {
+            "id": this.id,
+            "name": name,
+            "args": await this.make_w_args(args),
+            "kwargs": await this.make_w_kwargs(kwargs),
+            "auto_convert": auto_convert
+        });
+    }
+
 }
 
-let app_scope = new PyScope(window.app_scope_key);
+const py = new PyScope(window.app_scope_key);

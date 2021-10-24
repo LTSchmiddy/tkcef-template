@@ -24,7 +24,7 @@ class JsObjectManager {
         window._py_jsobjectman.append_callback("call_method_fn", this._call_method_fn.bind(this));
     }
 
-    _make_js_object(item: any){
+    _make_js_object(item: any): Promise<string> {
         return new Promise((resolve: any, reject: any) => {
             window.with_uuid4((uuid: string)=>{
                 this.add(uuid, item);
@@ -48,7 +48,7 @@ class JsObjectManager {
     get_type (item_id: string): any {
         return typeof this.storage[item_id];
     }
-
+    
     get_list(item_ids: string[]): any[] {
         let retVal = [];
 
@@ -264,7 +264,7 @@ class JsObjectManager {
 
 window._jsobjectman = new JsObjectManager();
 
-function JsObject(item: any) {
+function JsObject(item: any): Promise<string> {
     return window._jsobjectman._make_js_object(item);
 }
 

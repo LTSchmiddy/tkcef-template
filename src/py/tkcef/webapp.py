@@ -106,8 +106,8 @@ class WebApp:
         self.js_bindings = None
 
         self.document_path = document_path
-        self.pyscopemanager = PyScopeManager()
         self.js_object_manager = JsObjectManager()
+        self.pyscopemanager = PyScopeManager(self.js_object_manager)
 
         self._on_update_queue = queue.Queue()
 
@@ -162,7 +162,7 @@ class WebApp:
             for key, value in pairs.items():
                 method(key, value)
 
-        self.additional_js_binds()
+        self.js_config()
         self.js_bindings.Rebind()
 
         return self.js_bindings
@@ -185,8 +185,8 @@ class WebApp:
         self._first_loop = True
 
         self.js_preload.run(browser)
-        self.pyscopemanager.config_in_browser(browser)
         self.js_object_manager.config_in_browser(browser)
+        self.pyscopemanager.config_in_browser(browser)
 
     def _run_step(self):
         if not self.js_object_manager.is_ready:
@@ -246,7 +246,7 @@ class WebApp:
 
         return menubar
 
-    def additional_js_binds(self):
+    def js_config(self):
         pass
 
     def start(self):

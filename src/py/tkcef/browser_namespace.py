@@ -7,7 +7,6 @@ from typing import Union
 from cefpython3 import cefpython as cef
 
 from util import anon_func as af
-from .js_object import JsObject, JsObjectManager
 
 class BrowserNamespaceWrapper:
     _mod: ModuleType

@@ -15,6 +15,9 @@ from . import logger
 from .js_preload import JsPreloadScript
 from util import anon_func as af
 
+LOGGING = False
+
+
 # Defining custom exceptions first:
 
 
@@ -55,7 +58,7 @@ class JsObjectManagerCallTimeoutException(Exception):
         return f"JsObjectManagerCall '{self.call.label}' timed out after waiting {self.call.wait_time}."
 
 
-# Class definitions:
+# ==== Class definitions: ====
 class JsObjectManager:
     is_ready: bool
     browser: cef.PyBrowser
@@ -67,6 +70,7 @@ class JsObjectManager:
     remove_fn: cef.JavascriptCallback
     access_fn: cef.JavascriptCallback
     py_fn: cef.JavascriptCallback
+    auto_convert_fn: cef.JavascriptCallback
     get_type_fn: cef.JavascriptCallback
     get_attr_fn: cef.JavascriptCallback
     set_attr_fn: cef.JavascriptCallback
@@ -110,6 +114,9 @@ class JsObjectManager:
 
         return retVal
 
+    def get_js_type(self, item) -> str:
+        return self.from_py(item).get_type()
+        
     def from_func(self, fn_code, params: dict = {}, convert_args: bool = True):
         return JsObject(self, fn_code, params, convert_args=convert_args)
 
@@ -149,7 +156,7 @@ class JsObjectManager:
 
 
 class JsObjectManagerCall:
-    log_completions: bool = False
+    log_completions: bool = LOGGING
     should_raise_timeout_error: bool = False
 
     label: str
@@ -218,7 +225,7 @@ class JsObject(Callable):
         "boolean",
     )
 
-    log_destructions: bool = False
+    log_destructions: bool = LOGGING
 
     _object_id: str
     manager: JsObjectManager
@@ -376,6 +383,7 @@ class JsObject(Callable):
             return None
 
         return self.manager.from_id(call.result)
+        
 
     def set_attr(self, name: str, value: Any) -> JsObject:
 
