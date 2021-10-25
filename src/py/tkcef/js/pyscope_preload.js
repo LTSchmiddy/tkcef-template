@@ -86,7 +86,26 @@ class PyScope {
             this.id = (yield window._scopeman.scope_call(window._py_scopeman.destroy, { id: this.id }));
         });
     }
-    exec(code, ret_name = null, params = {}) {
+    make_w_args(args) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let arg_ids = [];
+            for (let i = 0; i < args.length; i++) {
+                arg_ids.push(yield JsObject(args[i]));
+            }
+            return arg_ids;
+        });
+    }
+    make_w_kwargs(kwargs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let kwarg_ids = {};
+            for (const [key, value] of Object.entries(kwargs)) {
+                // Looking up both keys AND values from stored objects:
+                kwarg_ids[key] = yield JsObject(value);
+            }
+            return kwarg_ids;
+        });
+    }
+    exec(code, params = {}, ret_name = null) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield window._scopeman.scope_call(window._py_scopeman.exec, {
                 "id": this.id,
@@ -96,12 +115,43 @@ class PyScope {
             });
         });
     }
+    aw_exec(code, params = {}, ret_name = null) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.w_exec(code, params, ret_name, true);
+        });
+    }
+    w_exec(code, params = {}, ret_name = null, do_auto_convert = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield window._scopeman.scope_call(window._py_scopeman.w_exec_runner, {
+                "id": this.id,
+                "code": code,
+                "ret_name": ret_name,
+                "params": yield this.make_w_kwargs(params),
+                "do_auto_convert": do_auto_convert
+            });
+        });
+    }
     do_func(code, params = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield window._scopeman.scope_call(window._py_scopeman.do_func, {
                 "id": this.id,
                 "code": code,
                 "params": params
+            });
+        });
+    }
+    aw_do_func(code, params = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.w_do_func(code, params, true);
+        });
+    }
+    w_do_func(code, params = {}, do_auto_convert = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield window._scopeman.scope_call(window._py_scopeman.w_do_func_runner, {
+                "id": this.id,
+                "code": code,
+                "params": yield this.make_w_kwargs(params),
+                "do_auto_convert": do_auto_convert
             });
         });
     }
@@ -149,9 +199,14 @@ class PyScope {
             });
         });
     }
-    call(name, args = [], kwargs = {}) {
+    call(name, ...args) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield window._scopeman.scope_call(window._py_scopeman.call, {
+            return yield this.call_kw(name, args);
+        });
+    }
+    call_kw(name, args = [], kwargs = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield window._scopeman.scope_call(window._py_scopeman.raw_call_runner, {
                 "id": this.id,
                 "name": name,
                 "args": args,
@@ -159,6 +214,33 @@ class PyScope {
             });
         });
     }
+    aw_call(name, ...args) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.w_call_kw(name, args, {}, true);
+        });
+    }
+    aw_call_kw(name, args = [], kwargs = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.w_call_kw(name, args, kwargs, true);
+        });
+    }
+    w_call(name, ...args) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.w_call_kw(name, args);
+        });
+    }
+    w_call_kw(name, args = [], kwargs = {}, auto_convert = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // return await window._scopeman.scope_call(window._py_scopeman.w_call_runner, {
+            return yield window._scopeman.scope_call(window._py_scopeman.w_call_runner, {
+                "id": this.id,
+                "name": name,
+                "args": yield this.make_w_args(args),
+                "kwargs": yield this.make_w_kwargs(kwargs),
+                "auto_convert": auto_convert
+            });
+        });
+    }
 }
-let app_scope = new PyScope(window.app_scope_key);
+const py = new PyScope(window.app_scope_key);
 //# sourceMappingURL=pyscope_preload.js.map

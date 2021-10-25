@@ -8,7 +8,6 @@ from cefpython3 import cefpython as cef
 
 from util import anon_func as af
 
-
 class BrowserNamespaceWrapper:
     _mod: ModuleType
     _mod_locals: dict

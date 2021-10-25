@@ -28,6 +28,7 @@ class LoadHandler(object):
             self.browser_frame.master.navigation_bar.set_url(browser.GetUrl())
 
     def OnLoadEnd(self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int):
+        print("CALLING ON_LOAD...")
         self.browser_frame.webframe.app._on_page_loaded(browser, frame, http_code)
 
 
@@ -223,9 +224,9 @@ class BrowserFrame(tk.Frame):
         window_info.SetAsChild(self.get_window_handle(), rect)
         # self.browser = cef.CreateBrowserSync(window_info,
         #                                      url="https://www.google.com/")
-
+        
         self.webframe.app._construct_app_webview(
-            window_info,
+            window_info
         )
 
     def get_window_handle(self):
