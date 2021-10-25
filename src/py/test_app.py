@@ -1,8 +1,8 @@
-import tkcef, settings, jsbind
-
+import tkcef, settings
 from tkcef import WebApp, JsObject
 from tkcef.js_types import JsWindow
 
+import ui
 
 class TestApp(tkcef.WebApp):
     window: JsWindow
@@ -13,7 +13,6 @@ class TestApp(tkcef.WebApp):
         self.document_path = (
             settings.webpack_dir.joinpath("index.html").absolute().as_uri()
         )
-        self.js_bind_objects = jsbind.bindings
     
     def js_config(self):
         super().js_config()
@@ -24,12 +23,14 @@ class TestApp(tkcef.WebApp):
 
     def start(self):
         self.window = JsWindow(self.js_object_manager.from_func("return window;"))
-        print(repr(self.window))
-        print(repr(self.window.document))
-        print(repr(self.window.document.head))
-    
+        self.document = self.window.document
+
+        self.root = self.document.get_element("#page-root")
         
-        # print(f"{self.window._get_js_properties()=}")
+        self.root.access("self.append(x)", {'x': self.document.htmlToElement(ui.loader.get_template("root.html").render())})
+        
+        print(self.document.title.py())
+        print(f"{self.window.innerHeight.py()=}")
     
     def update(self):
         pass

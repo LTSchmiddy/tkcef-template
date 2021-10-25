@@ -97,23 +97,6 @@ class JsObjectManager:
     def ready(self):
         self.is_ready = True
 
-    def get_element(self, query: str) -> JsObject:
-        return self.from_func("return document.querySelector(query);", {"query": query})
-
-    def get_elements(self, query: str) -> JsObject:
-        return self.from_func(
-            "return document.querySelectorAll(query);", {"query": query}
-        )
-
-    def get_element_list(self, query: str) -> JsObject:
-        result = self.get_elements(query)
-        retVal = []
-
-        for i in range(0, result["length"].py()):
-            retVal.append(result[i])
-
-        return retVal
-
     def get_js_type(self, item) -> str:
         return self.from_py(item).get_js_type()
     
@@ -193,6 +176,10 @@ class JsObjectManagerCall:
         self.wait_time = 0
         self.result = None
         self.error = None
+        
+    @property
+    def value(self):
+        return self.py()
 
     def on_complete(self, result=None, error=None):
         self.result = result

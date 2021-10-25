@@ -12,7 +12,7 @@ from typing import Any, Callable, Type, Union
 from cefpython3 import cefpython as cef
 from cefpython3.cefpython_py39 import JavascriptCallback
 
-from . import with_uuid4, logger
+from . import AppManager, with_uuid4, logger
 from .browser_namespace import BrowserNamespaceWrapper
 from .pyscope import PyScopeManager
 from .js_object import JsObjectManager
@@ -54,7 +54,7 @@ class UpdateAction(Callable):
 
 
 class WebApp:
-
+    app_manager: AppManager
     browser: cef.PyBrowser = None
     page_code_loader_fn: str = "_load_page_content"
 
@@ -78,6 +78,10 @@ class WebApp:
     @property
     def app_manager_key(self) -> str:
         return self.tk_frame.app_manager_key
+    
+    @property
+    def app_manager(self) -> str:
+        return self.tk_frame.app_manager
 
     @property
     def app_scope_key(self) -> str:

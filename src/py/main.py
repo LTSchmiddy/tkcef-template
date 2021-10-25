@@ -7,7 +7,7 @@ from tkcef import AppManager
 from tkcef.webapp import WebApp
 from test_app import TestApp
 
-import ui, jsbind, test_scope
+import ui, test_scope
 
 if __name__ == "__main__":
     settings.load_settings()

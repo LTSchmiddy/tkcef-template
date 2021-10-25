@@ -73,61 +73,61 @@ class JsDocument(JsObject):
     xmlVersion: JsObject
     
     # Methods:
-    adoptNode: JsObject
-    append: JsObject
-    caretPositionFromPoint: JsObject
-    caretRangeFromPoint: JsObject
-    clear: JsObject
-    close: JsObject
-    createAttribute: JsObject
-    createCDATASection: JsObject
-    createComment: JsObject
-    createDocumentFragment: JsObject
-    createElement: JsObject
-    createElementNS: JsObject
-    createEntityReference: JsObject
-    createEvent: JsObject
-    createExpression: JsObject
-    createNodeIterator: JsObject
-    createNSResolver: JsObject
-    createProcessingInstruction: JsObject
-    createRange: JsObject
-    createTextNode: JsObject
-    createTouch: JsObject
-    createTouchList: JsObject
-    createTreeWalker: JsObject
-    elementFromPoint: JsObject
-    elementsFromPoint: JsObject
-    enableStyleSheetsForSet: JsObject
-    evaluate: JsObject
-    execCommand: JsObject
-    exitFullscreen: JsObject
-    exitPictureInPicture: JsObject
-    exitPointerLock: JsObject
-    getAnimations: JsObject
-    getBoxObjectFor: JsObject
-    getElementById: JsObject
-    getElementsByClassName: JsObject
-    getElementsByName: JsObject
-    getElementsByTagName: JsObject
-    getElementsByTagNameNS: JsObject
-    getSelection: JsObject
-    hasFocus: JsObject
-    hasStorageAccess: JsObject
-    importNode: JsObject
-    mozSetImageElement: JsObject
-    open: JsObject
-    prepend: JsObject
-    queryCommandEnabled: JsObject
-    queryCommandSupported: JsObject
-    querySelector: JsObject
-    querySelectorAll: JsObject
-    registerElement: JsObject
-    releaseCapture: JsObject
-    replaceChildren: JsObject
-    requestStorageAccess: JsObject
-    write: JsObject
-    writeln: JsObject
+    # adoptNode: JsObject
+    # append: JsObject
+    # caretPositionFromPoint: JsObject
+    # caretRangeFromPoint: JsObject
+    # clear: JsObject
+    # close: JsObject
+    # createAttribute: JsObject
+    # createCDATASection: JsObject
+    # createComment: JsObject
+    # createDocumentFragment: JsObject
+    # createElement: JsObject
+    # createElementNS: JsObject
+    # createEntityReference: JsObject
+    # createEvent: JsObject
+    # createExpression: JsObject
+    # createNodeIterator: JsObject
+    # createNSResolver: JsObject
+    # createProcessingInstruction: JsObject
+    # createRange: JsObject
+    # createTextNode: JsObject
+    # createTouch: JsObject
+    # createTouchList: JsObject
+    # createTreeWalker: JsObject
+    # elementFromPoint: JsObject
+    # elementsFromPoint: JsObject
+    # enableStyleSheetsForSet: JsObject
+    # evaluate: JsObject
+    # execCommand: JsObject
+    # exitFullscreen: JsObject
+    # exitPictureInPicture: JsObject
+    # exitPointerLock: JsObject
+    # getAnimations: JsObject
+    # getBoxObjectFor: JsObject
+    # getElementById: JsObject
+    # getElementsByClassName: JsObject
+    # getElementsByName: JsObject
+    # getElementsByTagName: JsObject
+    # getElementsByTagNameNS: JsObject
+    # getSelection: JsObject
+    # hasFocus: JsObject
+    # hasStorageAccess: JsObject
+    # importNode: JsObject
+    # mozSetImageElement: JsObject
+    # open: JsObject
+    # prepend: JsObject
+    # queryCommandEnabled: JsObject
+    # queryCommandSupported: JsObject
+    # querySelector: JsObject
+    # querySelectorAll: JsObject
+    # registerElement: JsObject
+    # releaseCapture: JsObject
+    # replaceChildren: JsObject
+    # requestStorageAccess: JsObject
+    # write: JsObject
+    # writeln: JsObject
     
     # Events:
     animationcancel: JsObject
@@ -178,3 +178,25 @@ class JsDocument(JsObject):
     wheel: JsObject
     Node: JsObject
     EventTarget: JsObject
+    
+    def get_element(self, query: str) -> JsObject:
+        return self.manager.from_func("return document.querySelector(query);", {"query": query})
+
+    def get_elements(self, query: str) -> JsObject:
+        return self.manager.from_func(
+            "return document.querySelectorAll(query);", {"query": query}
+        )
+
+    def get_element_list(self, query: str) -> JsObject:
+        result = self.get_elements(query)
+        retVal = []
+
+        for i in range(0, result["length"].py()):
+            retVal.append(result[i])
+
+        return retVal
+    
+    def htmlToElement(self, html: str):
+        template = self.access("return self.createElement('template')")
+        template['innerHTML'] = html.strip()
+        return template['content']['firstChild']

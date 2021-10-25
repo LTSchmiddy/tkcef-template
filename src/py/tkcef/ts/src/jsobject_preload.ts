@@ -9,7 +9,7 @@ class JsObjectManager {
 
     constructor() {
         this.storage = {};
-        this.callback_errors = true;
+        this.callback_errors = false;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -70,7 +70,7 @@ class JsObjectManager {
         return retVal;
     }
 
-    access(item_id: string, access_code: string, args: any = {}, obj_param: string = "obj") {
+    access(item_id: string, access_code: string, args: any = {}, obj_param: string = "self") {
         if ((typeof args) === "string") {
             // Assume Python gave us a JsObject instead of a dict.
             // In which case, look of the JsObject
@@ -112,6 +112,8 @@ class JsObjectManager {
 
     call_method(item_id: string, method_name: string, args: string) {
         return this.storage[item_id][method_name].bind(this.storage[item_id])(...this.get(args));
+        // console.log();
+        // return this.access(item_id, `return self.${method_name}(..._args)`, {_args: args});
     }
 
     _JsCall_error(callback: Function, error: any, code: string = "") {
