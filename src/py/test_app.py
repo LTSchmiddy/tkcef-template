@@ -1,10 +1,11 @@
 import tkcef, settings, jsbind
 
 from tkcef import WebApp, JsObject
+from tkcef.js_types import JsWindow
 
 
 class TestApp(tkcef.WebApp):
-    window: JsObject
+    window: JsWindow
 
     def __init__(self):
         super().__init__()
@@ -22,10 +23,13 @@ class TestApp(tkcef.WebApp):
 
 
     def start(self):
-        self.window = self.js_object_manager.from_func("return window;")
-        print(repr(self.window))       
+        self.window = JsWindow(self.js_object_manager.from_func("return window;"))
+        print(repr(self.window))
+        print(repr(self.window.document))
+        print(repr(self.window.document.head))
+    
         
-        print(f"{self.window._get_js_properties()=}")
+        # print(f"{self.window._get_js_properties()=}")
     
     def update(self):
         pass

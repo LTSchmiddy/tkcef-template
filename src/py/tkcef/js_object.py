@@ -116,12 +116,16 @@ class JsObjectManager:
 
     def get_js_type(self, item) -> str:
         return self.from_py(item).get_js_type()
-        
+    
+    
     def from_func(self, fn_code, params: dict = {}, convert_args: bool = True):
-        return JsObject(self, fn_code, params, convert_args=convert_args)
+        return JsObject(manager=self, fn_code=fn_code, args=params, convert_args=convert_args)
 
-    def from_id(self, uuid: str) -> JsObject:
-        return JsObject(self, None, object_id=uuid)
+    def from_id(self, uuid: str, new_type: type[JsObject] = None):
+        if new_type is None:
+            new_type = JsObject
+            
+        return new_type(manager=self, object_id=uuid)
 
     def from_py(self, obj: Any) -> JsObject:
         if isinstance(obj, cef.JavascriptCallback):
@@ -224,30 +228,48 @@ class JsObject(Callable):
         "number",
         "boolean",
     )
-
-    log_destructions: bool = LOGGING
+    _js_properties_cache: dict[str, dict[str, type]] = {}
+    _log_destructions: bool = LOGGING
 
     _object_id: str
     manager: JsObjectManager
     destroyed: bool
     js_type: str
+    
+    @classmethod
+    def set_js_properties_cache(cls, value: dict[str, type]):
+        cls._js_properties_cache[cls] = value
+    
+    @classmethod
+    def get_js_properties_cache(cls):
+        if cls not in cls._js_properties_cache:
+            return None
+        
+        return cls._js_properties_cache[cls]
 
     def __init__(
         self,
-        manager: JsObjectManager,
+        base: JsObject = None,
+        *,
+        manager: JsObjectManager=None,
         fn_code: str = None,
         args: Union[dict, JsObject] = {},
-        *,
         convert_args: bool = True,
         object_id: str = None,
     ):
         self.destroyed = False
 
-        self._object_id = object_id
-        if self._object_id is None:
-            self._object_id = str(uuid.uuid4())
+        if base is not None:
+            self._object_id = base._object_id
+            # Unlinking:
+            base._object_id = None
+            self.manager = base.manager
 
-        self.manager = manager
+        else:
+            self._object_id = object_id 
+            if self._object_id is None:
+                self._object_id = str(uuid.uuid4())
+            self.manager = manager
 
         if fn_code is not None:
             if convert_args:
@@ -297,10 +319,17 @@ class JsObject(Callable):
             retVal += "..."
         return retVal
 
+
     def __getattr__(self, name: str) -> Any:
         props = self._get_js_properties()
         if name in props.keys():
-            return self[name]
+            retVal = self[name]
+            
+            # Convert to subclass when specified:
+            if props[name] != JsObject:
+                retVal = retVal.as_type(props[name])
+            
+            return retVal
         
         raise AttributeError(name)
     
@@ -313,11 +342,30 @@ class JsObject(Callable):
         return super().__setattr__(name, value)
 
     def _get_js_properties(self) -> dict[str, type[JsObject]]:
-        return dict(filter(
-            lambda elem: issubclass(elem[1], JsObject),
-            get_type_hints(type(self)).items()
-        ))
+        cache = self.get_js_properties_cache()
+        
+        def type_check(elem):
+            # print(elem)
+            try:
+                r = issubclass(elem[1], JsObject)
+                # print (f"{r=}")
+                return r
+            except TypeError as e:
+                # print(f"{elem[1]} is not a type.")
+                return False
+        
+        if cache is None:
+            cache = dict(filter(
+                # lambda elem: issubclass(elem[1], JsObject),
+                type_check,
+                get_type_hints(type(self)).items()
+            ))
+        self.set_js_properties_cache(cache)
+        
+        return cache
 
+    
+    
     # Regular Methods:
     def _wait_successful(self, call: JsObjectManagerCall):
         if call.timed_out:
@@ -340,7 +388,7 @@ class JsObject(Callable):
             self._object_id,
             lambda: (
                 logger.debug(f"Destroyed JsObject {self._object_id}")
-                if self.log_destructions
+                if self._log_destructions
                 else None
             ),
         )
@@ -371,6 +419,17 @@ class JsObject(Callable):
 
         return self.manager.from_id(call.result)
 
+    def as_type(self, new_type: type[JsObject]):
+        retVal = self.manager.from_id(self._object_id, new_type)
+        
+        # Unlinking own reference
+        self._object_id = None
+        
+        return retVal
+        
+    def new(self, *args):
+        return self.access("return new self(...args)", {"args": args})
+        
     def py(self) -> Any:
         call = JsObjectManagerCall(self, "py")
         self.manager.py_fn.Call(self._object_id, call.on_complete)
