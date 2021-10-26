@@ -26,7 +26,7 @@ if __name__ == "__main__":
     app2 = TestApp()
 
     # app_man.add_webapp("app1", app1)
-    app_man.add_webapp("app2", app2)
+    app_man.add_app("app2", app2)
 
     app_man.mainloop()
     app_man.shutdown()

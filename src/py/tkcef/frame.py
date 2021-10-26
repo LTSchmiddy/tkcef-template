@@ -61,30 +61,31 @@ class WebFrame(tk.Frame):
     menubar: tk.Menu = None
 
     updated_title: str = None
+    
+    show_navbar: bool = False
+
+    @property
+    def app_manager_key(self) -> str:
+        return self.app.app_manager_key
+    
+    @property
+    def app_manager(self) -> str:
+        return self.app.app_manager
 
     def __init__(
         self,
         root,
         app,
         title: str = "Tkinter example",
-        show_navbar: bool = False,
-        geometry: str = "900x640",
-        menubar: tk.Menu = None,
-        app_manager: AppManager = None,
-        app_manager_key: str = None,
+        geometry: str = "900x640"
     ):
 
         self.updated_title: str = None
 
         # Setting relationships between root, frame, and webapp:
-        self.root: tk.Tk = root
         # self.root.webframe = self
         self.app: webapp.WebApp = app
         self.app.tk_frame = self
-
-        # Setting up manager info:
-        self.app_manager: AppManager = app_manager
-        self.app_manager_key: str = app_manager_key
 
         # Initializing Frame:
         self.browser_frame = None
@@ -94,11 +95,12 @@ class WebFrame(tk.Frame):
         root.geometry(geometry)
         tk.Grid.rowconfigure(root, 0, weight=1)
         tk.Grid.columnconfigure(root, 0, weight=1)
-
+        
         # MainFrame
         tk.Frame.__init__(self, root)
 
         # Add Menubar:
+        menubar = self.app.construct_menubar(root)
         if menubar is not None:
             self.set_menubar(menubar)
 
@@ -112,7 +114,7 @@ class WebFrame(tk.Frame):
 
         # NavigationBar
         self.navigation_bar = None
-        if show_navbar:
+        if self.show_navbar:
             self.navigation_bar = NavigationBar(self)
             self.navigation_bar.grid(
                 row=0, column=0, sticky=(tk.N + tk.S + tk.E + tk.W)
@@ -135,7 +137,7 @@ class WebFrame(tk.Frame):
 
     def set_menubar(self, menubar: tk.Menu):
         self.menubar = menubar
-        self.root.config(menu=self.menubar)
+        self.master.config(menu=self.menubar)
 
     def on_root_configure(self, _):
         logger.debug("MainFrame.on_root_configure")
@@ -158,16 +160,18 @@ class WebFrame(tk.Frame):
         logger.debug("MainFrame.on_focus_out")
 
     def on_close(self):
-        self.app._on_destroy()
-
+        self.app.close()
+    
+    def destroy(self):
+        self.navigation_bar = None
+        
         if self.browser_frame:
             self.browser_frame.on_root_close()
             self.browser_frame = None
-        else:
-            self.master.destroy()
-
-        if self.app_manager is not None and self.app_manager_key is not None:
-            self.app_manager.remove_webapp(self.app_manager_key)
+            
+        self.master = None
+        
+        self.app = None
 
     def get_browser(self):
         if self.browser_frame:
@@ -304,15 +308,15 @@ class BrowserFrame(tk.Frame):
         if self.browser:
             logger.debug("CloseBrowser")
             self.browser.CloseBrowser(True)
-            self.clear_browser_references()
+            # self.clear_browser_references()
         else:
             logger.debug("tk.Frame.destroy")
             self.destroy()
 
-    def clear_browser_references(self):
-        # Clear browser references that you keep anywhere in your
-        # code. All references must be cleared for CEF to shutdown cleanly.
-        self.browser = None
+    # def clear_browser_references(self):
+    #     # Clear browser references that you keep anywhere in your
+    #     # code. All references must be cleared for CEF to shutdown cleanly.
+    #     self.browser = None
 
 
 class NavigationBar(tk.Frame):

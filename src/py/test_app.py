@@ -22,22 +22,23 @@ class TestApp(tkcef.WebApp):
 
 
     def start(self):
-        self.window = JsWindow(self.js_object_manager.from_func("return window;"))
-        # self.window.access("console.log(self)")
-        self.document = self.window.document
+        pass
+        # self.window = JsWindow(self.js_object_manager.from_func("return window;"))
+        # # self.window.access("console.log(self)")
+        # self.document = self.window.document
         
-        print(repr(self.window))
+        # print(repr(self.window))
         
-        print("===== Access Test Start =====")
+        # print("===== Access Test Start =====")
         
-        self.document.access("console.log(x)", {'x': [33, 55, {"y": self.window, "hi": "alex"}]})
-        print("===== Access Test Complete =====")
-        # self.root = self.document.get_element("#page-root")
+        # self.document.access("console.log(x)", {'x': [33, 55, {"y": self.window, "hi": "alex"}]})
+        # print("===== Access Test Complete =====")
+        # # self.root = self.document.get_element("#page-root")
         
-        # self.root.access("self.append(x)", {'x': self.document.htmlToElement(ui.loader.get_template("root.html").render())})
+        # # self.root.access("self.append(x)", {'x': self.document.htmlToElement(ui.loader.get_template("root.html").render())})
         
-        print(self.document.title.py())
-        print(f"{self.window.innerHeight.py()=}")
+        # print(self.document.title.py())
+        # print(f"{self.window.innerHeight.py()=}")
     
     def update(self):
         pass

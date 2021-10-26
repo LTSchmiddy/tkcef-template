@@ -1,6 +1,7 @@
 from __future__ import annotations, generator_stop
+import queue
 from types import ModuleType
-from typing import Callable, Union
+from typing import Any, Callable, Union
 
 # Example of embedding CEF Python browser using Tkinter toolkit.
 # This example has two widgets: a navigation bar and a browser.
@@ -54,8 +55,118 @@ def with_uuid4(callback: cef.JavascriptCallback):
     callback.Call(str(id))
 
 
+
+class UpdateAction(Callable):
+    # This class holds the definition for a function/method call
+    # so it can triggered later. Used for queueing calls that must
+    # performed on Tk's main/update thread.
+    fn: Callable
+    args: tuple[Any]
+    kwargs: dict[str, Any]
+
+    def __init__(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
+        if isinstance(fn, cef.JavascriptCallback):
+            self.fn = fn.Call
+        else:
+            self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    def call(self) -> Any:
+        return self.fn(*self.args, **self.kwargs)
+
+    def __call__(self) -> Any:
+        return self.call()
+
+class App:
+    app_manager: AppManager = None
+    app_manager_key: str = None
+    
+    tk_root: tk.Tk
+    tk_frame: tk.Frame
+    tk_frame_class: type[tk.Frame]
+    _on_update_queue: queue.Queue[UpdateAction]
+
+
+    def __init__(
+        self,
+        *,
+        tk_frame_class: type[tk.Frame] = tk.Frame,
+    ):       
+        self.tk_frame: tk.Frame = None
+        self.tk_frame_class = tk_frame_class
+        self._on_update_queue = queue.Queue()
+
+    def setup(self,
+        key: str,
+        app_manager: AppManager,
+    ):
+        self.app_manager: AppManager = app_manager
+        self.app_manager_key: str = key
+        
+        self.tk_frame = self.tk_frame_class(
+            tk.Tk()
+        )
+
+    def _run_step(self):
+        self.tk_frame.update_idletasks()
+        self.tk_frame.update()
+
+        # Handle queued actions:
+        while not self._on_update_queue.empty():
+            self._on_update_queue.get().call()
+
+        # Update as normal:
+        self.update()
+        
+    def update(self):
+        pass
+
+    def destroy(self):
+        self.tk_root.destroy()
+        self.tk_frame = None
+        self.tk_root = None
+        
+        # All references must be cleared for CEF to shutdown cleanly.
+        
+    def close(self):
+        if self.app_manager is not None and self.app_manager_key is not None:
+            self.app_manager.remove_webapp(self.app_manager_key)
+
+
+
+    def queue_update_action(
+        self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs
+    ):
+        self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
+        
+
+    def set_geometry(self, width: int, height: int):
+        self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
+
+    # In most cases, these 4 methods are the main ones you want to override:
+    def construct_menubar(self, root: tk.Tk) -> tk.Menu:
+        menubar = tk.Menu(root)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(
+            label="Open Developer Tools", command=lambda: self.browser.ShowDevTools()
+        )
+        filemenu.add_command(
+            label="Full Reload", command=lambda: self.browser.ReloadIgnoreCache()
+        )
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=self.close)
+        menubar.add_cascade(label="File", menu=filemenu)
+
+        return menubar
+
+
+
+        
+    
+
 class AppManager:
-    root_frames: dict[str, WebFrame]
+    apps: dict[str, WebFrame]
     keys_to_add: dict[str, WebFrame]
     keys_to_remove: list[str]
 
@@ -67,7 +178,7 @@ class AppManager:
 
     @property
     def should_run(self) -> bool:
-        return len(self.root_frames) > 0 or len(self.keys_to_add) > 0
+        return len(self.apps) > 0 or len(self.keys_to_add) > 0
 
     def __init__(
         self,
@@ -109,43 +220,22 @@ class AppManager:
 
         cef.Initialize(settings=cef_config, switches={"allow-file-access": ""})
 
-        self.root_frames = {}
+        self.apps = {}
         self.keys_to_add = {}
         self.keys_to_remove = []
 
-    def add_webapp(
+    def add_app(
         self,
         key: str,
         app: webapp.WebApp,
         title: str = "TkCef App",
-        show_navbar: bool = False,
         geometry: str = "900x640",
-        menubar_builder: Callable[[tk.Tk], tk.Menu] = None,
     ):
-
-        root = tk.Tk()
-
-        menubar = None
-        if menubar_builder is not None:
-            menubar = menubar_builder(root)
-
-        else:
-            menubar = app.construct_menubar(root)
-
         # frame = WebFrame(
-        frame = app.tk_frame_class(
-            root,
-            app,
-            title=title,
-            show_navbar=show_navbar,
-            geometry=geometry,
-            menubar=menubar,
-            app_manager=self,
-            app_manager_key=key,
-        )
+        app.setup(key, self, title, geometry)
 
         # self.keys_to_add[key] = root
-        self.keys_to_add[key] = frame
+        self.keys_to_add[key] = app
 
     def remove_webapp(self, key: str):
         self.keys_to_remove.append(key)
@@ -173,25 +263,20 @@ class AppManager:
 
         # If any windows were opened, add them to roots:
         if len(self.keys_to_add) > 0:
-            self.root_frames.update(self.keys_to_add)
+            self.apps.update(self.keys_to_add)
             self.keys_to_add.clear()
 
         # Update windows:
-        for key, frame in self.root_frames.items():
-
+        for key, app in self.apps.items():
             # if (threading.currentThread() == self.thread):
-            frame.update_idletasks()
-            frame.update()
-            frame.app._run_step()
-
-            # else:
-            # print(f"INFO: AppManager update attempted from incorrect thread: {threading.currentThread().name}")
+            app._run_step()
 
         # If any windows were closed, remove them from roots:
         if len(self.keys_to_remove) > 0:
             for i in self.keys_to_remove:
-                if i in self.root_frames:
-                    del self.root_frames[i]
+                if i in self.apps:
+                    self.apps[i].destroy()
+                    del self.apps[i]
             self.keys_to_remove.clear()
 
     def shutdown(self):

@@ -12,7 +12,7 @@ from typing import Any, Callable, Type, Union
 from cefpython3 import cefpython as cef
 from cefpython3.cefpython_py39 import JavascriptCallback
 
-from . import AppManager, with_uuid4, logger
+from . import App, AppManager, UpdateAction, with_uuid4, logger
 from .browser_namespace import BrowserNamespaceWrapper
 from .pyscope import PyScopeManager
 from .js_object import JsObjectManager
@@ -30,27 +30,6 @@ class AppCallbacks:
         self.app.tk_frame.set_title(new_title)
 
 
-class UpdateAction(Callable):
-    # This class holds the definition for a function/method call
-    # so it can triggered later. Used for queueing calls that must
-    # performed on Tk's main/update thread.
-    fn: Callable
-    args: tuple[Any]
-    kwargs: dict[str, Any]
-
-    def __init__(self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs):
-        if isinstance(fn, cef.JavascriptCallback):
-            self.fn = fn.Call
-        else:
-            self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-
-    def call(self) -> Any:
-        return self.fn(*self.args, **self.kwargs)
-
-    def __call__(self) -> Any:
-        return self.call()
 
 
 class WebApp:
@@ -76,14 +55,6 @@ class WebApp:
     _on_update_queue: queue.Queue[UpdateAction]
 
     @property
-    def app_manager_key(self) -> str:
-        return self.tk_frame.app_manager_key
-    
-    @property
-    def app_manager(self) -> str:
-        return self.tk_frame.app_manager
-
-    @property
     def app_scope_key(self) -> str:
         return f"SCOPE_{self.app_manager_key}"
 
@@ -95,7 +66,7 @@ class WebApp:
         js_bind_functions: dict = {},
         js_bind_objects: dict = {},
         tk_frame_class: Type[WebFrame] = WebFrame,
-    ):
+    ):       
         self._first_loop = True
         self.tk_frame: WebFrame = None
         self.tk_frame_class = tk_frame_class
@@ -121,12 +92,43 @@ class WebApp:
     def __del__(self):
         pass
 
-    def _on_destroy(self):
+    def destroy(self):
+        self.tk_frame.master.destroy()
+        self.tk_frame = None
+        
+        # All references must be cleared for CEF to shutdown cleanly.
+        self.browser = None
+        
         # Destroy the app scope once the app is closed:
         if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
             BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
+        
+    def close(self):
+        if self.app_manager is not None and self.app_manager_key is not None:
+            self.app_manager.remove_webapp(self.app_manager_key)
 
-    def _construct_app_webview(self, window_info: cef.WindowInfo) -> cef.PyBrowser:
+    def setup(self,
+        key: str,
+        app_manager: AppManager,
+        title: str = "TkCef App",
+        geometry: str = "900x640",
+    ):
+        self.app_manager: AppManager = app_manager
+        self.app_manager_key: str = key
+        
+        self.tk_root = tk.Tk()
+        self.tk_frame = self.tk_frame_class(
+            self.tk_root,
+            self,
+            title,
+            geometry
+        )
+    
+    def close(self):
+        if self.app_manager is not None and self.app_manager_key is not None:
+            self.app_manager.remove_webapp(self.app_manager_key)
+    
+    def _construct_app_webview(self, window_info: cef.WindowInfo):
 
         BrowserNamespaceWrapper.create_namespace_if_dne(self.app_scope_key)
         self.app_scope = BrowserNamespaceWrapper.namespaces[self.app_scope_key]
@@ -191,6 +193,9 @@ class WebApp:
         self.pyscopemanager.config_in_browser(browser)
 
     def _run_step(self):
+        self.tk_frame.update_idletasks()
+        self.tk_frame.update()
+        
         if not self.js_object_manager.is_ready:
             return
 
@@ -243,7 +248,7 @@ class WebApp:
             label="Full Reload", command=lambda: self.browser.ReloadIgnoreCache()
         )
         filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=root.quit)
+        filemenu.add_command(label="Exit", command=self.close)
         menubar.add_cascade(label="File", menu=filemenu)
 
         return menubar

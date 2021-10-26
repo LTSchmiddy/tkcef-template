@@ -384,7 +384,8 @@ class JsObject(Callable):
             self.destroy()
 
     def __str__(self):
-        return self._object_id
+        return str(self._object_id)
+        
 
     def __repr__(self):
         retVal = f"{type(self).__name__} {self._object_id}: <{self.js_type}> "
