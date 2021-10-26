@@ -107,10 +107,10 @@ class WebApp:
         self.js_bind_functions = js_bind_functions
         self.js_bind_objects = js_bind_objects
 
-        self.js_bindings = None
+        self.js_bindings = cef.JavascriptBindings()
 
         self.document_path = document_path
-        self.js_object_manager = JsObjectManager()
+        self.js_object_manager = JsObjectManager(self.js_bindings)
         self.pyscopemanager = PyScopeManager(self.js_object_manager)
 
         self._on_update_queue = queue.Queue()
@@ -140,8 +140,6 @@ class WebApp:
         )
 
     def _create_js_bindings(self) -> cef.JavascriptBindings:
-        self.js_bindings = cef.JavascriptBindings()
-
         self.js_bindings.SetProperty("app_manager_key", self.app_manager_key)
         self.js_bindings.SetProperty("app_scope_key", self.app_scope_key)
 

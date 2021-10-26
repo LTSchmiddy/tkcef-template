@@ -2,7 +2,7 @@
 class JsObjectManager {
     constructor() {
         this.storage = {};
-        this.callback_errors = false;
+        this.callback_errors = true;
         window._py_jsobjectman.append_callback("fadd_fn", this._fadd_fn.bind(this));
         window._py_jsobjectman.append_callback("add_fn", this._add_fn.bind(this));
         window._py_jsobjectman.append_callback("remove_fn", this._remove_fn.bind(this));
@@ -42,6 +42,34 @@ class JsObjectManager {
             retVal.push(this.get(item_ids[i]));
         }
         return retVal;
+    }
+    convert_list_items(items, convert_indexes) {
+        let retVal = [];
+        for (let i = 0; i < items.length; i++) {
+            retVal.push(items[i]);
+        }
+        return this.convert_list_items_in_place(retVal, convert_indexes);
+    }
+    convert_list_items_in_place(items, convert_indexes) {
+        for (let i = 0; i < convert_indexes.length; i++) {
+            let convert_index = convert_indexes[i];
+            // console.log(`Converting ID: ${items[convert_index]} -> ${this.get(items[convert_index])}`);
+            items[convert_index] = this.get(items[convert_index]);
+        }
+        return items;
+    }
+    make_pairs_from_lists(keys, values) {
+        let retVal = {};
+        keys.forEach((key, index) => {
+            retVal[key] = values[index];
+        });
+        return retVal;
+    }
+    convert_and_make_pairs_from_lists(keys, convert_keys, values, convert_values) {
+        return this.make_pairs_from_lists(this.convert_list_items(keys, convert_keys), this.convert_list_items(values, convert_values));
+    }
+    convert_in_place_and_make_pairs_from_lists(keys, convert_keys, values, convert_values) {
+        return this.make_pairs_from_lists(this.convert_list_items_in_place(keys, convert_keys), this.convert_list_items_in_place(values, convert_values));
     }
     get_pairs(item_ids) {
         let retVal = {};
