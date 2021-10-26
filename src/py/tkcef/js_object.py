@@ -334,10 +334,13 @@ class JsObject(Callable):
         self.destroyed = False
 
         if base is not None:
-            self._object_id = base._object_id
-            # Unlinking:
-            base._object_id = None
             self.manager = base.manager
+            # We need to make a new storage entry for this object, so that we don't render the old variable useless. 
+            new_base = self.manager.from_func("return base", {'base': base})
+            self._object_id = new_base
+            # Unlinking new_base:
+            new_base._object_id = None
+
 
         else:
             self._object_id = object_id 
@@ -495,11 +498,13 @@ class JsObject(Callable):
         return self.manager.from_id(call.result)
 
     def as_type(self, new_type: type[JsObject]):
-        retVal = self.manager.from_id(self._object_id, new_type)
+        # We need to make a new storage entry for the JS value, so that we don't render this JsObject instance useless. 
+        new_self = self.manager.from_func("return self", {'self': self})
         
-        # Unlinking own reference
-        self._object_id = None
+        retVal = self.manager.from_id(new_self._object_id, new_type)
         
+        # Unlinking new_self:
+        new_self._object_id = None
         return retVal
         
     def new(self, *args):
