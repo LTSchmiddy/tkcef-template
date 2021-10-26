@@ -3,7 +3,7 @@ from pathlib import Path
 
 import settings
 import tkcef
-from tkcef import AppManager
+from tkcef import App, AppManager
 from tkcef.webapp import WebApp
 from test_app import TestApp
 
@@ -19,14 +19,11 @@ if __name__ == "__main__":
     print(f"{doc_path=}")
 
     app_man = AppManager()
-    # app1 = WebApp(
-    #     document_path=doc_path,
-    #     js_bind_objects=jsbind.bindings,
-    # )
-    app2 = TestApp()
+    app1 = TestApp()
+    app2 = App()
 
-    # app_man.add_webapp("app1", app1)
-    app_man.add_app("app2", app2)
+    app_man.add_app("app1", app1)
+    # app_man.add_app("app2", app2)
 
     app_man.mainloop()
     app_man.shutdown()

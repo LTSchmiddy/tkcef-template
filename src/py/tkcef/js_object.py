@@ -337,7 +337,7 @@ class JsObject(Callable):
             self.manager = base.manager
             # We need to make a new storage entry for this object, so that we don't render the old variable useless. 
             new_base = self.manager.from_func("return base", {'base': base})
-            self._object_id = new_base
+            self._object_id = new_base._object_id
             # Unlinking new_base:
             new_base._object_id = None
 
@@ -462,6 +462,10 @@ class JsObject(Callable):
     def destroy(self):
         self.destroyed = True
         # print(f"Destroying {self._object_id}...")
+        
+        if self._object_id is None:
+            return
+        
         self.manager.remove_fn.Call(
             self._object_id,
             lambda: (

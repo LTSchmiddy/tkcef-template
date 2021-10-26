@@ -7,7 +7,7 @@ import time
 import platform
 import logging as _logging
 
-from . import webapp, AppManager, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
+from . import AppFrame, webapp, AppManager, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
 
 
 class LifespanHandler(object):
@@ -56,21 +56,10 @@ class FocusHandler(object):
             self.browser_frame.focus_set()
 
 
-class WebFrame(tk.Frame):
+class WebFrame(AppFrame):
     browser: cef.PyBrowser = None
-    menubar: tk.Menu = None
-
     updated_title: str = None
-    
     show_navbar: bool = False
-
-    @property
-    def app_manager_key(self) -> str:
-        return self.app.app_manager_key
-    
-    @property
-    def app_manager(self) -> str:
-        return self.app.app_manager
 
     def __init__(
         self,
@@ -79,7 +68,6 @@ class WebFrame(tk.Frame):
         title: str = "Tkinter example",
         geometry: str = "900x640"
     ):
-
         self.updated_title: str = None
 
         # Setting relationships between root, frame, and webapp:
@@ -135,17 +123,13 @@ class WebFrame(tk.Frame):
     def set_title(self, new_title: str):
         self.updated_title = new_title
 
-    def set_menubar(self, menubar: tk.Menu):
-        self.menubar = menubar
-        self.master.config(menu=self.menubar)
-
     def on_root_configure(self, _):
-        logger.debug("MainFrame.on_root_configure")
+        super().on_root_configure(_)
         if self.browser_frame:
             self.browser_frame.on_root_configure()
 
     def on_configure(self, event):
-        logger.debug("MainFrame.on_configure")
+        super().on_configure(event)
         if self.browser_frame:
             width = event.width
             height = event.height
@@ -154,13 +138,10 @@ class WebFrame(tk.Frame):
             self.browser_frame.on_webframe_configure(width, height)
 
     def on_focus_in(self, _):
-        logger.debug("MainFrame.on_focus_in")
+        super().on_focus_in(_)
 
     def on_focus_out(self, _):
-        logger.debug("MainFrame.on_focus_out")
-
-    def on_close(self):
-        self.app.close()
+        super().on_focus_out(_)
     
     def destroy(self):
         self.navigation_bar = None
@@ -168,10 +149,8 @@ class WebFrame(tk.Frame):
         if self.browser_frame:
             self.browser_frame.on_root_close()
             self.browser_frame = None
-            
-        self.master = None
         
-        self.app = None
+        super().destroy()
 
     def get_browser(self):
         if self.browser_frame:
@@ -182,14 +161,6 @@ class WebFrame(tk.Frame):
         if self.browser_frame:
             return self.browser_frame
         return None
-
-    def setup_icon(self):
-        resources = os.path.join(os.path.dirname(__file__), "resources")
-        icon_path = os.path.join(resources, "tkinter" + IMAGE_EXT)
-        if os.path.exists(icon_path):
-            self.icon = tk.PhotoImage(file=icon_path)
-            # noinspection PyProtectedMember
-            self.master.call("wm", "iconphoto", self.master._w, self.icon)
 
     def update(self):
         super().update()

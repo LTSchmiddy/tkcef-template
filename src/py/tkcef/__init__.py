@@ -24,6 +24,7 @@ from types import ModuleType
 import threading
 import tkinter as tk
 import sys
+import os
 import time
 import platform
 import logging as _logging
@@ -78,6 +79,93 @@ class UpdateAction(Callable):
     def __call__(self) -> Any:
         return self.call()
 
+
+
+class AppFrame(tk.Frame):
+    @property
+    def app_manager_key(self) -> str:
+        return self.app.app_manager_key
+    
+    @property
+    def app_manager(self) -> str:
+        return self.app.app_manager
+
+    def __init__(
+        self,
+        root,
+        app,
+        title: str = "Tkinter example",
+        geometry: str = "900x640"
+    ):
+
+        self.updated_title: str = None
+
+        # Setting relationships between root, frame, and webapp:
+        # self.root.webframe = self
+        self.app: App = app
+
+        # Root
+        root.geometry(geometry)
+        
+        # MainFrame
+        tk.Frame.__init__(self, root)
+
+        # Add Menubar:
+        menubar = self.app.construct_menubar(root)
+        if menubar is not None:
+            self.set_menubar(menubar)
+
+        self.master.title(title)
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.master.bind("<Configure>", self.on_root_configure)
+        self.setup_icon()
+        self.bind("<Configure>", self.on_configure)
+        self.bind("<FocusIn>", self.on_focus_in)
+        self.bind("<FocusOut>", self.on_focus_out)
+
+        tk.Grid.rowconfigure(self, 0, weight=0)
+        tk.Grid.columnconfigure(self, 0, weight=0)
+
+        # Pack MainFrame
+        self.pack(fill=tk.BOTH, expand=tk.YES)
+
+    def set_menubar(self, menubar: tk.Menu):
+        self.menubar = menubar
+        self.master.config(menu=self.menubar)
+
+    def on_root_configure(self, _):
+        logger.debug(f"{type(self).__name__}.on_root_configure")
+            
+
+    def on_configure(self, event):
+        logger.debug(f"{type(self).__name__}.on_configure")
+
+    def on_focus_in(self, _):
+        logger.debug(f"{type(self).__name__}.on_focus_in")
+
+    def on_focus_out(self, _):
+        logger.debug(f"{type(self).__name__}.on_focus_out")
+
+    def on_close(self):
+        self.app.close()
+    
+    def destroy(self):
+        self.master = None
+        self.app = None
+
+    def setup_icon(self):
+        resources = os.path.join(os.path.dirname(__file__), "resources")
+        icon_path = os.path.join(resources, "tkinter" + IMAGE_EXT)
+        if os.path.exists(icon_path):
+            self.icon = tk.PhotoImage(file=icon_path)
+            # noinspection PyProtectedMember
+            self.master.call("wm", "iconphoto", self.master._w, self.icon)
+
+    def update(self):
+        super().update()
+        
+    
+
 class App:
     app_manager: AppManager = None
     app_manager_key: str = None
@@ -91,7 +179,7 @@ class App:
     def __init__(
         self,
         *,
-        tk_frame_class: type[tk.Frame] = tk.Frame,
+        tk_frame_class: type[tk.Frame] = AppFrame,
     ):       
         self.tk_frame: tk.Frame = None
         self.tk_frame_class = tk_frame_class
@@ -100,13 +188,17 @@ class App:
     def setup(self,
         key: str,
         app_manager: AppManager,
+        construct_frame: bool = True
     ):
         self.app_manager: AppManager = app_manager
         self.app_manager_key: str = key
         
-        self.tk_frame = self.tk_frame_class(
-            tk.Tk()
-        )
+        if construct_frame:
+            self.tk_root = tk.Tk()
+            self.tk_frame = self.tk_frame_class(
+                self.tk_root,
+                self
+            )
 
     def _run_step(self):
         self.tk_frame.update_idletasks()
@@ -148,28 +240,18 @@ class App:
     def construct_menubar(self, root: tk.Tk) -> tk.Menu:
         menubar = tk.Menu(root)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(
-            label="Open Developer Tools", command=lambda: self.browser.ShowDevTools()
-        )
-        filemenu.add_command(
-            label="Full Reload", command=lambda: self.browser.ReloadIgnoreCache()
-        )
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.close)
         menubar.add_cascade(label="File", menu=filemenu)
 
         return menubar
 
-
-
-        
-    
-
 class AppManager:
     apps: dict[str, WebFrame]
     keys_to_add: dict[str, WebFrame]
     keys_to_remove: list[str]
 
+    using_cef: bool
     thread: threading.Thread
     update_interval: Union[int, float]
     update_sched: sched.scheduler
@@ -205,6 +287,7 @@ class AppManager:
             )
         )
         logger.info("Tk {ver}".format(ver=tk.Tcl().eval("info patchlevel")))
+
         logger.info("CEF Python {ver}".format(ver=cef.__version__))
         assert cef.__version__ >= "55.3", "CEF Python v55.3+ required to run this"
         sys.excepthook = cef.ExceptHook
@@ -227,12 +310,10 @@ class AppManager:
     def add_app(
         self,
         key: str,
-        app: webapp.WebApp,
-        title: str = "TkCef App",
-        geometry: str = "900x640",
+        app: webapp.WebApp
     ):
         # frame = WebFrame(
-        app.setup(key, self, title, geometry)
+        app.setup(key, self)
 
         # self.keys_to_add[key] = root
         self.keys_to_add[key] = app
