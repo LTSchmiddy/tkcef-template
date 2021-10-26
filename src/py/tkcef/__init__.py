@@ -56,7 +56,6 @@ def with_uuid4(callback: cef.JavascriptCallback):
     callback.Call(str(id))
 
 
-
 class UpdateAction(Callable):
     # This class holds the definition for a function/method call
     # so it can triggered later. Used for queueing calls that must
@@ -80,22 +79,17 @@ class UpdateAction(Callable):
         return self.call()
 
 
-
 class AppFrame(tk.Frame):
     @property
     def app_manager_key(self) -> str:
         return self.app.app_manager_key
-    
+
     @property
     def app_manager(self) -> str:
         return self.app.app_manager
 
     def __init__(
-        self,
-        root,
-        app,
-        title: str = "Tkinter example",
-        geometry: str = "900x640"
+        self, root, app, title: str = "Tkinter example", geometry: str = "900x640"
     ):
 
         self.updated_title: str = None
@@ -106,7 +100,7 @@ class AppFrame(tk.Frame):
 
         # Root
         root.geometry(geometry)
-        
+
         # MainFrame
         tk.Frame.__init__(self, root)
 
@@ -135,7 +129,6 @@ class AppFrame(tk.Frame):
 
     def on_root_configure(self, _):
         logger.debug(f"{type(self).__name__}.on_root_configure")
-            
 
     def on_configure(self, event):
         logger.debug(f"{type(self).__name__}.on_configure")
@@ -148,7 +141,7 @@ class AppFrame(tk.Frame):
 
     def on_close(self):
         self.app.close()
-    
+
     def destroy(self):
         self.master = None
         self.app = None
@@ -163,42 +156,33 @@ class AppFrame(tk.Frame):
 
     def update(self):
         super().update()
-        
-    
+
 
 class App:
     app_manager: AppManager = None
     app_manager_key: str = None
-    
+
     tk_root: tk.Tk
     tk_frame: tk.Frame
     tk_frame_class: type[tk.Frame]
     _on_update_queue: queue.Queue[UpdateAction]
 
-
     def __init__(
         self,
         *,
         tk_frame_class: type[tk.Frame] = AppFrame,
-    ):       
+    ):
         self.tk_frame: tk.Frame = None
         self.tk_frame_class = tk_frame_class
         self._on_update_queue = queue.Queue()
 
-    def setup(self,
-        key: str,
-        app_manager: AppManager,
-        construct_frame: bool = True
-    ):
+    def setup(self, key: str, app_manager: AppManager, construct_frame: bool = True):
         self.app_manager: AppManager = app_manager
         self.app_manager_key: str = key
-        
+
         if construct_frame:
             self.tk_root = tk.Tk()
-            self.tk_frame = self.tk_frame_class(
-                self.tk_root,
-                self
-            )
+            self.tk_frame = self.tk_frame_class(self.tk_root, self)
 
     def _run_step(self):
         self.tk_frame.update_idletasks()
@@ -210,7 +194,7 @@ class App:
 
         # Update as normal:
         self.update()
-        
+
     def update(self):
         pass
 
@@ -218,20 +202,17 @@ class App:
         self.tk_root.destroy()
         self.tk_frame = None
         self.tk_root = None
-        
+
         # All references must be cleared for CEF to shutdown cleanly.
-        
+
     def close(self):
         if self.app_manager is not None and self.app_manager_key is not None:
             self.app_manager.remove_webapp(self.app_manager_key)
-
-
 
     def queue_update_action(
         self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs
     ):
         self._on_update_queue.put(UpdateAction(fn, *args, **kwargs))
-        
 
     def set_geometry(self, width: int, height: int):
         self.queue_update_action(self.tk_frame.root.geometry, f"{width}x{height}")
@@ -245,6 +226,7 @@ class App:
         menubar.add_cascade(label="File", menu=filemenu)
 
         return menubar
+
 
 class AppManager:
     apps: dict[str, WebFrame]
@@ -268,7 +250,7 @@ class AppManager:
         update_interval: Union[int, float] = 0.05,
         update_sched: sched.scheduler = sched.scheduler(),
         cef_config: dict = {},
-        thread: threading.Thread = threading.current_thread()
+        thread: threading.Thread = threading.current_thread(),
     ):
         self.thread = thread
         self.update_sched = update_sched
@@ -307,11 +289,7 @@ class AppManager:
         self.keys_to_add = {}
         self.keys_to_remove = []
 
-    def add_app(
-        self,
-        key: str,
-        app: webapp.WebApp
-    ):
+    def add_app(self, key: str, app: webapp.WebApp):
         # frame = WebFrame(
         app.setup(key, self)
 

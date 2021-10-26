@@ -1,6 +1,7 @@
 from ..js_object import JsObject
 from .document import JsDocument
 
+
 class JsWindow(JsObject):
     applicationCache: JsObject
     closed: JsObject
@@ -71,7 +72,7 @@ class JsWindow(JsObject):
     top: JsObject
     visualViewport: JsObject
     window: JsObject
-    
+
     alert: JsObject
     back: JsObject
     blur: JsObject
@@ -118,7 +119,7 @@ class JsWindow(JsObject):
     sizeToContent: JsObject
     stop: JsObject
     updateCommands: JsObject
-    
+
     event: JsObject
     afterprint: JsObject
     animationcancel: JsObject

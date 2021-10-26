@@ -49,7 +49,6 @@ class WebApp(App):
 
     _first_loop: bool
 
-
     @property
     def app_scope_key(self) -> str:
         return f"SCOPE_{self.app_manager_key}"
@@ -62,9 +61,9 @@ class WebApp(App):
         js_bind_functions: dict = {},
         js_bind_objects: dict = {},
         tk_frame_class: Type[WebFrame] = WebFrame,
-    ):  
+    ):
         super().__init__(tk_frame_class=tk_frame_class)
-        
+
         self._first_loop = True
 
         js_preload_path = Path(__file__).parent.joinpath("js/webapp_preload.js")
@@ -82,27 +81,23 @@ class WebApp(App):
 
         self.app_callbacks = AppCallbacks(self)
         self.app_scope = None
-        
-    def setup(self,
+
+    def setup(
+        self,
         key: str,
         app_manager: AppManager,
         title: str = "TkCef App",
         geometry: str = "900x640",
     ):
         super().setup(key, app_manager, False)
-        
+
         self.tk_root = tk.Tk()
-        self.tk_frame = self.tk_frame_class(
-            self.tk_root,
-            self,
-            title,
-            geometry
-        )
-    
+        self.tk_frame = self.tk_frame_class(self.tk_root, self, title, geometry)
+
     def _run_step(self):
         self.tk_frame.update_idletasks()
         self.tk_frame.update()
-        
+
         if not self.js_object_manager.is_ready:
             return
 
@@ -120,17 +115,17 @@ class WebApp(App):
 
         # Update as normal:
         self.update()
-    
+
     def destroy(self):
         super().destroy()
-        
+
         # All references must be cleared for CEF to shutdown cleanly.
         self.browser = None
-        
+
         # Destroy the app scope once the app is closed:
         if BrowserNamespaceWrapper.namespace_exists(self.app_scope_key):
             BrowserNamespaceWrapper.remove_namespace(self.app_scope_key)
-            
+
     # New Methods:
     def _construct_app_webview(self, window_info: cef.WindowInfo):
 
@@ -139,11 +134,9 @@ class WebApp(App):
         self.app_scope.set_var("app", self)
 
         # self.handlers = self.create_client_handlers()
-        
+
         self._create_js_bindings()
-        cef.PostTask(
-            cef.TID_UI, self._init_browser, window_info
-        )
+        cef.PostTask(cef.TID_UI, self._init_browser, window_info)
 
     def _create_js_bindings(self) -> cef.JavascriptBindings:
         self.js_bindings.SetProperty("app_manager_key", self.app_manager_key)
@@ -179,7 +172,6 @@ class WebApp(App):
         self.browser: cef.PyBrowser = cef.CreateBrowserSync(window_info)
         self.browser.SetJavascriptBindings(self.js_bindings)
 
-        
         for i in self.create_client_handlers():
             print(f"{i=}")
             self.browser.SetClientHandler(i)
@@ -217,7 +209,6 @@ class WebApp(App):
             self.document_path = document_path
 
         self.browser.LoadUrl(self.document_path)
-
 
     def create_client_handlers(self):
         return [

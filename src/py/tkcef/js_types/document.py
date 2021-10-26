@@ -1,7 +1,8 @@
 from ..js_object import JsObject
 
+
 class JsDocument(JsObject):
-    
+
     # Properties
     activeElement: JsObject
     alinkColor: JsObject
@@ -71,7 +72,7 @@ class JsDocument(JsObject):
     width: JsObject
     xmlEncoding: JsObject
     xmlVersion: JsObject
-    
+
     # Methods:
     # adoptNode: JsObject
     # append: JsObject
@@ -128,7 +129,7 @@ class JsDocument(JsObject):
     # requestStorageAccess: JsObject
     # write: JsObject
     # writeln: JsObject
-    
+
     # Events:
     animationcancel: JsObject
     animationend: JsObject
@@ -178,9 +179,11 @@ class JsDocument(JsObject):
     wheel: JsObject
     Node: JsObject
     EventTarget: JsObject
-    
+
     def get_element(self, query: str) -> JsObject:
-        return self.manager.from_func("return document.querySelector(query);", {"query": query})
+        return self.manager.from_func(
+            "return document.querySelector(query);", {"query": query}
+        )
 
     def get_elements(self, query: str) -> JsObject:
         return self.manager.from_func(
@@ -195,8 +198,8 @@ class JsDocument(JsObject):
             retVal.append(result[i])
 
         return retVal
-    
+
     def htmlToElement(self, html: str):
         template = self.access("return self.createElement('template')")
-        template['innerHTML'] = html.strip()
-        return template['content']['firstChild']
+        template["innerHTML"] = html.strip()
+        return template["content"]["firstChild"]

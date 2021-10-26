@@ -56,7 +56,8 @@ class JsObjectManagerCallTimeoutException(Exception):
 
     def __str__(self):
         return f"JsObjectManagerCall '{self.call.label}' timed out after waiting {self.call.wait_time}."
-    
+
+
 class JsObjectManagerCallDestroyedException(Exception):
     call: JsObjectManagerCall
 
@@ -109,12 +110,12 @@ class JsObjectManager:
             # Manually specifying 'is True' because some of the other return options are truthy.
             if self.js_bindings.IsValueAllowedRecursively(obj) is True:
                 return True
-        
+
         # There seems to be an issue with IsValueAllowedRecursively and JsObject's tendency
         # to convert itself to a string when necessary. Fortunately, this is also a 'False' scenario.
         except AttributeError as e:
             pass
-        
+
         return False
 
     def ready(self):
@@ -122,34 +123,37 @@ class JsObjectManager:
 
     def get_js_type(self, item) -> str:
         return self.from_py(item).get_js_type()
-    
-    
+
     def from_func(self, fn_code, params: dict = {}, convert_args: bool = True):
-        return JsObject(manager=self, fn_code=fn_code, args=params, convert_args=convert_args)
+        return JsObject(
+            manager=self, fn_code=fn_code, args=params, convert_args=convert_args
+        )
 
     def from_id(self, uuid: str, new_type: type[JsObject] = None):
         if new_type is None:
             new_type = JsObject
-            
+
         return new_type(manager=self, object_id=uuid)
 
     # The 'skip_cef_converts' param results in remarkably fewer calls between Python and JS.
     # Hopefully, it will result in considerably improved performance.
-    def from_py(self, obj: Any, skip_cef_converts: bool = True, store_cef_converts: bool = True) -> JsObject:
+    def from_py(
+        self, obj: Any, skip_cef_converts: bool = True, store_cef_converts: bool = True
+    ) -> JsObject:
         # If CEF can perform the conversion on it's own, that will be much faster:
         if skip_cef_converts and self.can_cef_convert(obj):
-            
+
             # print(f"CEF will convert {obj=} by itself...")
-            
+
             if store_cef_converts:
                 return self.from_func("return new_item;", {"new_item": obj}, False)
-            
+
             else:
                 # If we're not storing CEF converts, then we just get the original value back:
-                return obj;
-        
+                return obj
+
         # print(f"Tkcef will convert {obj=} manually...")
-        
+
         if isinstance(obj, cef.JavascriptCallback):
             return self.from_py(obj.Call, skip_cef_converts, store_cef_converts)
 
@@ -161,13 +165,19 @@ class JsObjectManager:
 
         elif isinstance(obj, list) or isinstance(obj, tuple):
             pairs = [self.from_py(i, skip_cef_converts, False) for i in obj]
-            
+
             retVal = None
             if skip_cef_converts:
-                converts = [i for i in range(0, len(pairs)) if issubclass(type(pairs[i]), JsObject)]
-                
+                converts = [
+                    i
+                    for i in range(0, len(pairs))
+                    if issubclass(type(pairs[i]), JsObject)
+                ]
+
                 retVal = self.from_func(
-                    "return this.convert_list_items_in_place(new_item_ids, converts);", {"new_item_ids": pairs, "converts": converts}, False
+                    "return this.convert_list_items_in_place(new_item_ids, converts);",
+                    {"new_item_ids": pairs, "converts": converts},
+                    False,
                 )
             else:
                 retVal = self.from_func(
@@ -177,7 +187,7 @@ class JsObjectManager:
             return retVal
 
         elif isinstance(obj, dict):
-            
+
             retVal = None
             # if False: pass
             if skip_cef_converts:
@@ -185,22 +195,30 @@ class JsObjectManager:
                 items = obj.items()
                 keys = [self.from_py(i[0], skip_cef_converts, False) for i in items]
                 values = [self.from_py(i[1], skip_cef_converts, False) for i in items]
-                
-                # I suppose I could have converted the key and value lists by running them  each through 
+
+                # I suppose I could have converted the key and value lists by running them  each through
                 # from_py again. But, I'm trying to reduce the number of js exchanges per method call.
                 # In simpler cases, that strategy would result in MORE js calls, not fewer.
-                convert_keys = [i for i in range(0, len(keys)) if issubclass(type(keys[i]), JsObject)]
-                convert_values = [i for i in range(0, len(values)) if issubclass(type(values[i]), JsObject)]
-                
+                convert_keys = [
+                    i
+                    for i in range(0, len(keys))
+                    if issubclass(type(keys[i]), JsObject)
+                ]
+                convert_values = [
+                    i
+                    for i in range(0, len(values))
+                    if issubclass(type(values[i]), JsObject)
+                ]
+
                 retVal = self.from_func(
                     "return this.convert_in_place_and_make_pairs_from_lists(keys, convert_keys, values, convert_values);",
                     {
                         "keys": keys,
                         "convert_keys": convert_keys,
                         "values": values,
-                        "convert_values": convert_values
+                        "convert_values": convert_values,
                     },
-                    False
+                    False,
                 )
             else:
                 pairs = {}
@@ -208,10 +226,12 @@ class JsObjectManager:
                     pairs[self.from_py(key)] = self.from_py(value)
 
                 retVal = self.from_func(
-                    "return this.get_pairs(new_item_ids)", {"new_item_ids": pairs}, False
+                    "return this.get_pairs(new_item_ids)",
+                    {"new_item_ids": pairs},
+                    False,
                 )
             return retVal
-        
+
         # When using skip_cef_converts, if the item was convertable, it should have been added by now.
         # But if not, check and handle that here.
         elif (not skip_cef_converts) and self.can_cef_convert(obj):
@@ -220,7 +240,7 @@ class JsObjectManager:
             # If something can't be converted, just make it undefined.
             # Having this as a failsafe oughta improve stability somewhat.
             return self.from_func("return undefined;", {}, False)
-            
+
 
 class JsObjectManagerCall:
     log_completions: bool = DEBUGGING
@@ -256,7 +276,7 @@ class JsObjectManagerCall:
         self.wait_time = 0
         self.result = None
         self.error = None
-        
+
     @property
     def value(self):
         return self.py()
@@ -302,30 +322,30 @@ class JsObject(Callable):
     manager: JsObjectManager
     destroyed: bool
     _js_type: str = None
-    
+
     @property
     def js_type(self):
         if self._js_type is None:
             # self.get_js_type()
             return "typeof not checked"
         return self._js_type
-    
+
     @classmethod
     def set_js_properties_cache(cls, value: dict[str, type]):
         cls._js_properties_cache[cls] = value
-    
+
     @classmethod
     def get_js_properties_cache(cls):
         if cls not in cls._js_properties_cache:
             return None
-        
+
         return cls._js_properties_cache[cls]
 
     def __init__(
         self,
         base: JsObject = None,
         *,
-        manager: JsObjectManager=None,
+        manager: JsObjectManager = None,
         fn_code: str = None,
         args: Union[dict, JsObject] = {},
         convert_args: bool = True,
@@ -335,15 +355,14 @@ class JsObject(Callable):
 
         if base is not None:
             self.manager = base.manager
-            # We need to make a new storage entry for this object, so that we don't render the old variable useless. 
-            new_base = self.manager.from_func("return base", {'base': base})
+            # We need to make a new storage entry for this object, so that we don't render the old variable useless.
+            new_base = self.manager.from_func("return base", {"base": base})
             self._object_id = new_base._object_id
             # Unlinking new_base:
             new_base._object_id = None
 
-
         else:
-            self._object_id = object_id 
+            self._object_id = object_id
             if self._object_id is None:
                 self._object_id = str(uuid.uuid4())
             self.manager = manager
@@ -385,7 +404,6 @@ class JsObject(Callable):
 
     def __str__(self):
         return str(self._object_id)
-        
 
     def __repr__(self):
         retVal = f"{type(self).__name__} {self._object_id}: <{self.js_type}> "
@@ -395,31 +413,30 @@ class JsObject(Callable):
             retVal += "..."
         return retVal
 
-
     def __getattr__(self, name: str) -> Any:
         props = self._get_js_properties()
         if name in props.keys():
             retVal = self[name]
-            
+
             # Convert to subclass when specified:
             if props[name] != JsObject:
                 retVal = retVal.as_type(props[name])
-            
+
             return retVal
-        
+
         raise AttributeError(name)
-    
+
     def __setattr__(self, name: str, value: Any) -> None:
         props = self._get_js_properties()
         if name in props.keys():
             self[name] = value
             return None
-        
+
         return super().__setattr__(name, value)
 
     def _get_js_properties(self) -> dict[str, type[JsObject]]:
         cache = self.get_js_properties_cache()
-        
+
         def type_check(elem):
             # print(elem)
             try:
@@ -429,21 +446,25 @@ class JsObject(Callable):
             except TypeError as e:
                 # print(f"{elem[1]} is not a type.")
                 return False
-        
+
         if cache is None:
-            cache = dict(filter(
-                # lambda elem: issubclass(elem[1], JsObject),
-                type_check,
-                get_type_hints(type(self)).items()
-            ))
+            cache = dict(
+                filter(
+                    # lambda elem: issubclass(elem[1], JsObject),
+                    type_check,
+                    get_type_hints(type(self)).items(),
+                )
+            )
         self.set_js_properties_cache(cache)
-        
+
         return cache
 
-    def check_destroyed_error(self, call: JsObjectManagerCall, raise_error: bool = True):
+    def check_destroyed_error(
+        self, call: JsObjectManagerCall, raise_error: bool = True
+    ):
         if raise_error and self.destroyed:
             raise JsObjectManagerCallDestroyedException(call)
-    
+
     # Regular Methods:
     def _wait_successful(self, call: JsObjectManagerCall):
         if call.timed_out:
@@ -462,10 +483,10 @@ class JsObject(Callable):
     def destroy(self):
         self.destroyed = True
         # print(f"Destroying {self._object_id}...")
-        
+
         if self._object_id is None:
             return
-        
+
         self.manager.remove_fn.Call(
             self._object_id,
             lambda: (
@@ -487,7 +508,7 @@ class JsObject(Callable):
         # Check to see which args are other JsObjects. If any are, we'll let
         # CEF know to replace those with their actual JavaScript counterparts.
         self.check_destroyed_error(call)
-        
+
         if convert_args:
             args = self.manager.from_py(args)
 
@@ -503,22 +524,22 @@ class JsObject(Callable):
         return self.manager.from_id(call.result)
 
     def as_type(self, new_type: type[JsObject]):
-        # We need to make a new storage entry for the JS value, so that we don't render this JsObject instance useless. 
-        new_self = self.manager.from_func("return self;", {'self': self})
-        
+        # We need to make a new storage entry for the JS value, so that we don't render this JsObject instance useless.
+        new_self = self.manager.from_func("return self;", {"self": self})
+
         retVal = self.manager.from_id(new_self._object_id, new_type)
-        
+
         # Unlinking new_self:
         new_self._object_id = None
         return retVal
-        
+
     def new(self, *args):
         return self.access("return new self(...args)", {"args": args})
-        
+
     def py(self) -> Any:
         call = JsObjectManagerCall(self, "py")
         self.check_destroyed_error(call)
-        
+
         self.manager.py_fn.Call(self._object_id, call.on_complete)
 
         call.wait()
@@ -531,21 +552,21 @@ class JsObject(Callable):
     def get_js_type(self) -> Any:
         call = JsObjectManagerCall(self, "get_type")
         self.check_destroyed_error(call)
-        
+
         self.manager.get_type_fn.Call(self._object_id, call.on_complete)
 
         call.wait()
 
         if not self._wait_successful(call):
             return None
-        
+
         self._js_type = call.result
         return call.result
 
     def get_attr(self, name: str) -> JsObject:
         call = JsObjectManagerCall(self, "get_attr")
         self.check_destroyed_error(call)
-        
+
         self.manager.get_attr_fn.Call(self._object_id, name, call.on_complete)
 
         call.wait()
@@ -554,13 +575,12 @@ class JsObject(Callable):
             return None
 
         return self.manager.from_id(call.result)
-        
 
     def set_attr(self, name: str, value: Any) -> JsObject:
 
         call = JsObjectManagerCall(self, "set_attr", timeout=None)
         self.check_destroyed_error(call)
-        
+
         self.manager.set_attr_fn.Call(
             self._object_id, name, self.manager.from_py(value), call.on_complete
         )
@@ -575,7 +595,7 @@ class JsObject(Callable):
     def has_attr(self, name: str) -> JsObject:
         call = JsObjectManagerCall(self, "has_attr")
         self.check_destroyed_error(call)
-        
+
         self.manager.has_attr_fn.Call(self._object_id, name, call.on_complete)
 
         call.wait()
@@ -588,7 +608,7 @@ class JsObject(Callable):
     def del_attr(self, name: str) -> JsObject:
         call = JsObjectManagerCall(self, "del_attr")
         self.check_destroyed_error(call)
-        
+
         self.manager.del_attr_fn.Call(self._object_id, name, call.on_complete)
 
         call.wait()
@@ -603,7 +623,7 @@ class JsObject(Callable):
 
         call = JsObjectManagerCall(self, "call")
         self.check_destroyed_error(call)
-        
+
         self.manager.call_fn.Call(self._object_id, pass_args, call.on_complete)
 
         # del args_test
@@ -620,7 +640,7 @@ class JsObject(Callable):
 
         call = JsObjectManagerCall(self, "call_method")
         self.check_destroyed_error(call)
-        
+
         self.manager.call_method_fn.Call(
             self._object_id, method_name, pass_args, call.on_complete
         )

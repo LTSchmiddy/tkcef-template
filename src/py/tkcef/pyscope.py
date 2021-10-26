@@ -11,47 +11,49 @@ from .js_preload import JsPreloadScript
 from .browser_namespace import BrowserNamespaceWrapper
 from .js_object import JsObjectManager, JsObject
 
+
 class PyScopeManager:
     auto_convert_types: list[str] = ["boolean", "number", "string"]
-    
+
     browser: cef.PyBrowser
 
     js_preload: JsPreloadScript
     js_object_manager: JsObjectManager
-    def __init__(self, js_object_manager: JsObjectManager=None):
+
+    def __init__(self, js_object_manager: JsObjectManager = None):
         self.js_object_manager = js_object_manager
-        
+
         self.js_preload = JsPreloadScript.new_from_file_path(
             Path(__file__).parent.joinpath("js/pyscope_preload.js")
         )
 
     def config_in_browser(self, browser: cef.PyBrowser):
         self.js_preload.run(browser)
-        
+
     def make_w_args(self, do_auto_convert: bool, args: list) -> list:
         retVal = []
-        
+
         for i in args:
             new_obj = self.js_object_manager.from_id(i)
-            
+
             if do_auto_convert and new_obj.js_type in self.auto_convert_types:
                 retVal.append(new_obj.py())
             else:
                 retVal.append(new_obj)
-        
+
         return retVal
-    
+
     def make_w_kwargs(self, do_auto_convert: bool, kwargs: dict) -> dict:
         retVal = {}
-        
+
         for key, value in kwargs.items():
             new_obj = self.js_object_manager.from_id(value)
-            
+
             if do_auto_convert and new_obj.js_type in self.auto_convert_types:
                 retVal[key] = new_obj.py()
             else:
                 retVal[key] = new_obj
-                
+
         return retVal
 
     def create(
@@ -125,11 +127,11 @@ class PyScopeManager:
             }
 
         complete_callback.Call(call_id, retVal)
-        
-        
+
     def w_exec_runner(self, *args, **kwargs):
         thread = threading.Thread(None, self.w_exec, args=args, kwargs=kwargs)
         thread.start()
+
     def w_exec(
         self, call_id: str, complete_callback: cef.JavascriptCallback, kwargs: dict
     ):
@@ -139,7 +141,7 @@ class PyScopeManager:
             retVal["result"] = ns.exec(
                 kwargs["code"],
                 kwargs["ret_name"],
-                self.make_w_kwargs(kwargs["do_auto_convert"], kwargs["params"]), 
+                self.make_w_kwargs(kwargs["do_auto_convert"], kwargs["params"]),
             )
         except Exception as e:
             retVal["error"] = {
@@ -168,8 +170,7 @@ class PyScopeManager:
             }
 
         complete_callback.Call(call_id, retVal)
-    
-    
+
     def w_do_func_runner(self, *args, **kwargs):
         thread = threading.Thread(None, self.w_do_func, args=args, kwargs=kwargs)
         thread.start()
@@ -287,7 +288,6 @@ class PyScopeManager:
 
         complete_callback.Call(call_id, retVal)
 
-
     def raw_call_runner(self, *args, **kwargs):
         thread = threading.Thread(None, self.raw_call, args=args, kwargs=kwargs)
         thread.start()
@@ -312,8 +312,6 @@ class PyScopeManager:
 
         complete_callback.Call(call_id, retVal)
 
-    
-
     def w_call_runner(self, *args, **kwargs):
         thread = threading.Thread(None, self.w_call, args=args, kwargs=kwargs)
         thread.start()
@@ -325,7 +323,7 @@ class PyScopeManager:
         try:
             args = self.make_w_args(params["auto_convert"], params["args"])
             kwargs = self.make_w_kwargs(params["auto_convert"], params["kwargs"])
-            
+
             ns = BrowserNamespaceWrapper.namespaces[params["id"]]
             retVal["result"] = ns.call(
                 params["name"],

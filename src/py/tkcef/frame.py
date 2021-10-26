@@ -62,11 +62,7 @@ class WebFrame(AppFrame):
     show_navbar: bool = False
 
     def __init__(
-        self,
-        root,
-        app,
-        title: str = "Tkinter example",
-        geometry: str = "900x640"
+        self, root, app, title: str = "Tkinter example", geometry: str = "900x640"
     ):
         self.updated_title: str = None
 
@@ -83,7 +79,7 @@ class WebFrame(AppFrame):
         root.geometry(geometry)
         tk.Grid.rowconfigure(root, 0, weight=1)
         tk.Grid.columnconfigure(root, 0, weight=1)
-        
+
         # MainFrame
         tk.Frame.__init__(self, root)
 
@@ -142,14 +138,14 @@ class WebFrame(AppFrame):
 
     def on_focus_out(self, _):
         super().on_focus_out(_)
-    
+
     def destroy(self):
         self.navigation_bar = None
-        
+
         if self.browser_frame:
             self.browser_frame.on_root_close()
             self.browser_frame = None
-        
+
         super().destroy()
 
     def get_browser(self):
@@ -199,10 +195,8 @@ class BrowserFrame(tk.Frame):
         window_info.SetAsChild(self.get_window_handle(), rect)
         # self.browser = cef.CreateBrowserSync(window_info,
         #                                      url="https://www.google.com/")
-        
-        self.webframe.app._construct_app_webview(
-            window_info
-        )
+
+        self.webframe.app._construct_app_webview(window_info)
 
     def get_window_handle(self):
         if MAC:
