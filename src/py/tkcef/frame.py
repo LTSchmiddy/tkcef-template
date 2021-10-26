@@ -186,7 +186,7 @@ class BrowserFrame(tk.Frame):
         self.bind("<FocusIn>", self.on_focus_in)
         self.bind("<FocusOut>", self.on_focus_out)
         self.bind("<Configure>", self.on_configure)
-        """For focus problems see Issue #255 and Issue #535. """
+        """ For focus problems see Issue #255 and Issue #535. """
         self.focus_set()
 
     def embed_browser(self):

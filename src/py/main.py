@@ -22,8 +22,8 @@ if __name__ == "__main__":
     app1 = TestApp()
     app2 = App()
 
-    app_man.add_app("app1", app1)
-    # app_man.add_app("app2", app2)
+    app_man.add(app1)
+    # app_man.add(app2)
 
     app_man.mainloop()
     app_man.shutdown()

@@ -36,7 +36,7 @@ class TestApp(tkcef.WebApp):
         print("===== Access Test Start =====")
 
         self.document.access(
-            "console.log(x)", {"x": [33, 55, {"y": self.window, "hi": "alex"}]}
+            "console.log(x)", {"x": [33, 55, {"y": self.window, "hi": "alex"}, [12, 23, 34]]}
         )
         print("===== Access Test Complete =====")
         # self.root = self.document.get_element("#page-root")

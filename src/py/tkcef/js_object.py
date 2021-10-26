@@ -138,12 +138,12 @@ class JsObjectManager:
     # The 'skip_cef_converts' param results in remarkably fewer calls between Python and JS.
     # Hopefully, it will result in considerably improved performance.
     def from_py(
-        self, obj: Any, skip_cef_converts: bool = True, store_cef_converts: bool = True
+        self, obj: Any, skip_cef_converts: bool = True, store_cef_converts: bool = True, log: bool = False
     ) -> JsObject:
         # If CEF can perform the conversion on it's own, that will be much faster:
         if skip_cef_converts and self.can_cef_convert(obj):
 
-            # print(f"CEF will convert {obj=} by itself...")
+            if log: logger.debug(f" --> CEF will convert {repr(obj)}...")
 
             if store_cef_converts:
                 return self.from_func("return new_item;", {"new_item": obj}, False)
@@ -152,7 +152,7 @@ class JsObjectManager:
                 # If we're not storing CEF converts, then we just get the original value back:
                 return obj
 
-        # print(f"Tkcef will convert {obj=} manually...")
+        if log: logger.debug(f" --> Tkcef will convert {repr(obj)}. ")
 
         if isinstance(obj, cef.JavascriptCallback):
             return self.from_py(obj.Call, skip_cef_converts, store_cef_converts)
@@ -510,7 +510,7 @@ class JsObject(Callable):
         self.check_destroyed_error(call)
 
         if convert_args:
-            args = self.manager.from_py(args)
+            args = self.manager.from_py(args, True, False)
 
         self.manager.access_fn.Call(
             self._object_id, fn_code, args, obj_param, call.on_complete
@@ -532,6 +532,9 @@ class JsObject(Callable):
         # Unlinking new_self:
         new_self._object_id = None
         return retVal
+    
+    def is_undefined(self) -> bool:
+        return self.get_js_type() == 'undefined'
 
     def new(self, *args):
         return self.access("return new self(...args)", {"args": args})

@@ -207,7 +207,7 @@ class App:
 
     def close(self):
         if self.app_manager is not None and self.app_manager_key is not None:
-            self.app_manager.remove_webapp(self.app_manager_key)
+            self.app_manager.remove(self.app_manager_key)
 
     def queue_update_action(
         self, fn: Union(Callable, cef.JavascriptCallback), *args, **kwargs
@@ -229,8 +229,8 @@ class App:
 
 
 class AppManager:
-    apps: dict[str, WebFrame]
-    keys_to_add: dict[str, WebFrame]
+    apps: dict[str, App]
+    keys_to_add: dict[str, App]
     keys_to_remove: list[str]
 
     using_cef: bool
@@ -289,14 +289,16 @@ class AppManager:
         self.keys_to_add = {}
         self.keys_to_remove = []
 
-    def add_app(self, key: str, app: webapp.WebApp):
-        # frame = WebFrame(
-        app.setup(key, self)
-
-        # self.keys_to_add[key] = root
+    def add(self, app: webapp.WebApp, key: str = None):
+        if key is None:
+            key = "APP_" + str(uuid.uuid4()).replace("-", "_")
+        
         self.keys_to_add[key] = app
 
-    def remove_webapp(self, key: str):
+    def remove(self, key: Union[str, App]):
+        if isinstance(key, App):
+            key = key.app_manager_key
+        
         self.keys_to_remove.append(key)
 
     def wait_interval(self):
@@ -322,6 +324,9 @@ class AppManager:
 
         # If any windows were opened, add them to roots:
         if len(self.keys_to_add) > 0:
+            for key, value in self.keys_to_add.items():
+                value.setup(key, self)
+                
             self.apps.update(self.keys_to_add)
             self.keys_to_add.clear()
 
