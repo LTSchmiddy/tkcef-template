@@ -499,7 +499,7 @@ class JsObject(Callable):
 
     def as_type(self, new_type: type[JsObject]):
         # We need to make a new storage entry for the JS value, so that we don't render this JsObject instance useless. 
-        new_self = self.manager.from_func("return self", {'self': self})
+        new_self = self.manager.from_func("return self;", {'self': self})
         
         retVal = self.manager.from_id(new_self._object_id, new_type)
         
