@@ -8,6 +8,7 @@ import './global_style/main.scss';
 import { ViewDef } from './view_def';
 import * as utils from './utils';
 
+const exports: any = {}
 
 export function generatePyClassHints(item: any): string {
     return generatePyClassHintsFromArray(Object.getOwnPropertyNames(item));
@@ -24,6 +25,6 @@ export function generatePyClassHintsFromArray(array: any[]): string {
     return retVal;
 }
 
-
 export let root: HTMLElement = document.getElementById("page-root");
+
 

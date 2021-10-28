@@ -23,7 +23,16 @@ class TestApp(tkcef.WebApp):
             "printr",
             lambda *args, **kwargs: print(" ".join([repr(i) for i in args]), **kwargs),
         )
+        
 
+    def load_element(self, template: str, *args, **kwargs):
+        return self.document.htmlToElement(self.load_element_code(template, *args, **kwargs))
+    
+    def load_element_code(self, template: str, *args, **kwargs):
+        return ui.loader.get_template(template).render(*args, **kwargs)
+        
+        
+        
     def start(self):
         # pass
         # self.window = self.js_object_manager.from_func("return window;")
@@ -31,20 +40,10 @@ class TestApp(tkcef.WebApp):
         self.window.access("console.log(self)")
         self.document = self.window.document
 
-        print(repr(self.window))
+        self.root = self.document.get_element("#page-root")
+        self.root.access("self.append(x)", {'x': self.load_element("root.html")})
 
-        print("===== Access Test Start =====")
 
-        self.document.access(
-            "console.log(x)", {"x": [33, 55, {"y": self.window, "hi": "alex"}, [12, 23, 34]]}
-        )
-        print("===== Access Test Complete =====")
-        # self.root = self.document.get_element("#page-root")
-
-        # self.root.access("self.append(x)", {'x': self.document.htmlToElement(ui.loader.get_template("root.html").render())})
-
-        print(self.document.title.py())
-        print(f"{self.window.innerHeight.py()=}")
 
     def update(self):
         pass

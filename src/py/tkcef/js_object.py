@@ -17,9 +17,7 @@ from util import anon_func as af
 
 DEBUGGING = True
 
-
 # Defining custom exceptions first:
-
 
 class JSObjectException(Exception):
     fn_code: str

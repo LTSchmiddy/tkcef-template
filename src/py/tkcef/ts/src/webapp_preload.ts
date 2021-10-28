@@ -7,6 +7,12 @@ function _load_page_content(page_code: string) {
     document.close();
 }
 
+function load_asset_as_data_url(path: string, mimetype: string|null = null) {
+    return new Promise((resolve, reject)=>{
+        window._promise_load_asset_as_data_url(path, mimetype, resolve, reject);
+    });
+}
+
 
 function _setup_title_updater(){
     // Call once for the current title:

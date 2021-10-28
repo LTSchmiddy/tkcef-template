@@ -6,6 +6,8 @@ import threading
 import time
 import traceback
 import queue
+import mimetypes
+import base64
 import tkinter as tk
 from typing import Any, Callable, Type, Union
 
@@ -17,7 +19,8 @@ from .browser_namespace import BrowserNamespaceWrapper
 from .pyscope import PyScopeManager
 from .js_object import JsObjectManager
 from .js_preload import JsPreloadScript
-from .frame import FocusHandler, LifespanHandler, LoadHandler, WebFrame
+from .frame import WebFrame
+from .handlers import FocusHandler, LifespanHandler, LoadHandler
 
 
 class AppCallbacks:
@@ -148,6 +151,7 @@ class WebApp(App):
         )
         self.js_bindings.SetFunction(self.set_geometry.__name__, self.set_geometry)
         self.js_bindings.SetFunction(self.load_page.__name__, self.load_page)
+        self.js_bindings.SetFunction(self._promise_load_asset_as_data_url.__name__, self._promise_load_asset_as_data_url)
         self.js_bindings.SetFunction(with_uuid4.__name__, with_uuid4)
 
         self.js_bindings.SetObject("_py_scopeman", self.pyscopemanager)
@@ -183,10 +187,30 @@ class WebApp(App):
         self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int
     ):
         self._first_loop = True
-
+        
         self.js_preload.run(browser)
         self.js_object_manager.config_in_browser(browser)
         self.pyscopemanager.config_in_browser(browser)
+
+    def load_asset_as_data_url(self, path: Union[str, Path], mimetype: str = None, use_base64: bool = True)->str:
+        if isinstance(path, str):
+            path = Path(path)
+        
+        if mimetype is None:
+            mimetype = mimetypes.guess_type(path)
+
+        data = base64.encodebytes(path.read_bytes()).replace(b'\n', b'').decode('utf8')
+        url = f"data:{mimetype[0]};base64,{data}"
+        
+        # print(f"{mimetype=}")
+        return url
+
+        
+    def _promise_load_asset_as_data_url(self, path: Union[str, Path], mimetype: str = None, resolve: cef.JavascriptCallback=None, reject: cef.JavascriptCallback=None):
+        try:
+            resolve.Call(self.load_asset_as_data_url(path, mimetype))
+        except Exception as e:
+            reject.Call(str(e))
 
     def construct_menubar(self, root: tk.Tk) -> tk.Menu:
         menubar = tk.Menu(root)
@@ -215,6 +239,7 @@ class WebApp(App):
             LifespanHandler(self.tk_frame.browser_frame),
             LoadHandler(self.tk_frame.browser_frame),
             FocusHandler(self.tk_frame.browser_frame),
+            # RequestHandler()
         ]
 
     def js_config(self):

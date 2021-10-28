@@ -5,6 +5,11 @@ function _load_page_content(page_code) {
     document.write(page_code);
     document.close();
 }
+function load_asset_as_data_url(path, mimetype = null) {
+    return new Promise((resolve, reject) => {
+        window._promise_load_asset_as_data_url(path, mimetype, resolve, reject);
+    });
+}
 function _setup_title_updater() {
     // Call once for the current title:
     window._app_callbacks.on_js_title_change(document.title);

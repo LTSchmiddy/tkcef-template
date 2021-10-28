@@ -7,53 +7,8 @@ import time
 import platform
 import logging as _logging
 
-from . import AppFrame, webapp, AppManager, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
+from . import AppFrame, webapp, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
 
-
-class LifespanHandler(object):
-    def __init__(self, tkFrame):
-        self.tkFrame = tkFrame
-
-    def OnBeforeClose(self, browser, **_):
-        logger.debug("LifespanHandler.OnBeforeClose")
-        self.tkFrame.quit()
-
-
-class LoadHandler(object):
-    def __init__(self, browser_frame):
-        self.browser_frame: BrowserFrame = browser_frame
-
-    def OnLoadStart(self, browser, **_):
-        if self.browser_frame.master.navigation_bar:
-            self.browser_frame.master.navigation_bar.set_url(browser.GetUrl())
-
-    def OnLoadEnd(self, browser: cef.PyBrowser, frame: cef.PyFrame, http_code: int):
-        print("CALLING ON_LOAD...")
-        self.browser_frame.webframe.app._on_page_loaded(browser, frame, http_code)
-
-
-class FocusHandler(object):
-    """For focus problems see Issue #255 and Issue #535."""
-
-    def __init__(self, browser_frame):
-        self.browser_frame = browser_frame
-
-    def OnTakeFocus(self, next_component, **_):
-        logger.debug(
-            "FocusHandler.OnTakeFocus, next={next}".format(next=next_component)
-        )
-
-    def OnSetFocus(self, source, **_):
-        logger.debug("FocusHandler.OnSetFocus, source={source}".format(source=source))
-        if LINUX:
-            return False
-        else:
-            return True
-
-    def OnGotFocus(self, **_):
-        logger.debug("FocusHandler.OnGotFocus")
-        if LINUX:
-            self.browser_frame.focus_set()
 
 
 class WebFrame(AppFrame):
