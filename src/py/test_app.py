@@ -24,26 +24,19 @@ class TestApp(tkcef.WebApp):
             lambda *args, **kwargs: print(" ".join([repr(i) for i in args]), **kwargs),
         )
         
-
     def load_element(self, template: str, *args, **kwargs):
         return self.document.htmlToElement(self.load_element_code(template, *args, **kwargs))
     
     def load_element_code(self, template: str, *args, **kwargs):
         return ui.loader.get_template(template).render(*args, **kwargs)
         
-        
-        
     def start(self):
-        # pass
         # self.window = self.js_object_manager.from_func("return window;")
         self.window = JsWindow(self.js_object_manager.from_func("return window;"))
-        self.window.access("console.log(self)")
         self.document = self.window.document
 
         self.root = self.document.get_element("#page-root")
         self.root.access("self.append(x)", {'x': self.load_element("root.html")})
-
-
 
     def update(self):
         pass

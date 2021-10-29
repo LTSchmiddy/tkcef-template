@@ -19,6 +19,13 @@
             "console": "integratedTerminal",
             // "preLaunchTask": "Webpack"
             "preLaunchTask": "Build Webcode"
-        }
+        },
+        {
+            "name": "VLC Testing",
+            "type": "python",
+            "request": "launch",
+            "program": "./src/py/vlc_test.py",
+            "console": "integratedTerminal"
+        },
     ]
 }

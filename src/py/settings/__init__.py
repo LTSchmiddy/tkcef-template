@@ -62,25 +62,11 @@ global_settings_path = exec_dir.joinpath(settings_file_name)
 
 def default_settings():
     return {
-        "ms_access": {
-            "access_path": "C:/Program Files/Microsoft Office/root/Office16/MSACCESS.EXE",
-        },
-        "remote": {
-            "connection": {
-                "address": None,
-                "port": 22,
-                "user": None,
-                "pkey_file": None,
-            },
-            "tunnel": {
-                "use_system_ssh": False,
-                "forward_config": "5432:localhost:5432",
-            },
-            "data": {"data-dir": "/opt/database-info"},
-        },
-        "db": {
-            "connection_string": "postgresql://alex:Xxeellaa1@localhost:5433/ms_access"
-        },
+        "vlc-telnet": {
+            "path": "C:/Program Files/VideoLAN/VLC/vlc.exe",
+            "telnet-host": "127.0.0.1",
+            "telnet-port": 4212
+        }
     }
 
 
