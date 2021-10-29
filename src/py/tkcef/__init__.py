@@ -354,7 +354,7 @@ class AppManager:
 
 from .webapp import WebApp
 from .js_object import JsObject
-from .frame import WebFrame
+from .webframe import WebFrame
 from .browser_namespace import BrowserNamespaceWrapper
 
 

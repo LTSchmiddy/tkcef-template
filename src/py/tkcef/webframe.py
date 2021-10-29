@@ -63,7 +63,7 @@ class WebFrame(AppFrame):
         tk.Grid.columnconfigure(self, 0, weight=0)
 
         # BrowserFrame
-        self.browser_frame = BrowserFrame(self, self.navigation_bar)
+        self.browser_frame = WebAppBrowserFrame(self, self.navigation_bar)
         self.browser_frame.grid(row=1, column=0, sticky=(tk.N + tk.S + tk.E + tk.W))
         tk.Grid.rowconfigure(self, 1, weight=1)
         tk.Grid.columnconfigure(self, 0, weight=1)
@@ -121,7 +121,7 @@ class WebFrame(AppFrame):
             self.updated_title = None
 
 
-class BrowserFrame(tk.Frame):
+class WebAppBrowserFrame(tk.Frame):
     webframe: WebFrame
 
     @property

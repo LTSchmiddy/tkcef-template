@@ -19,7 +19,7 @@ from .browser_namespace import BrowserNamespaceWrapper
 from .pyscope import PyScopeManager
 from .js_object import JsObjectManager
 from .js_preload import JsPreloadScript
-from .frame import WebFrame
+from .webframe import WebFrame
 from .handlers import FocusHandler, LifespanHandler, LoadHandler
 
 

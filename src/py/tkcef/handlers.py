@@ -9,7 +9,7 @@ import urllib
 import logging as _logging
 
 from . import AppFrame, webapp, logger, IMAGE_EXT, MAC, WINDOWS, LINUX
-from .frame import BrowserFrame
+from .webframe import WebAppBrowserFrame
 
 
 class LifespanHandler(object):
@@ -23,7 +23,7 @@ class LifespanHandler(object):
 
 class LoadHandler(object):
     def __init__(self, browser_frame):
-        self.browser_frame: BrowserFrame = browser_frame
+        self.browser_frame: WebAppBrowserFrame = browser_frame
 
     def OnLoadStart(self, browser, **_):
         if self.browser_frame.master.navigation_bar:
