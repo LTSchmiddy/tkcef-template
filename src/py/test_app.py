@@ -29,3 +29,6 @@ class TestApp(tkcef.WebApp):
     
     def update(self):
         pass
+
+
+class VlcApp(tkcef.App)

@@ -123,6 +123,7 @@ class WebFrame(tk.Frame):
 
         # BrowserFrame
         self.browser_frame = BrowserFrame(self, self.navigation_bar)
+        # self.browser_frame.grid(row=1, column=0, sticky=(tk.N + tk.S + tk.W))
         self.browser_frame.grid(row=1, column=0, sticky=(tk.N + tk.S + tk.E + tk.W))
         tk.Grid.rowconfigure(self, 1, weight=1)
         tk.Grid.columnconfigure(self, 0, weight=1)
